@@ -6,9 +6,8 @@ from passlib.context import CryptContext
 from models.user import User  
 from fastapi import HTTPException
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from core import config
-from schemas.user import UserOut
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -43,6 +42,6 @@ def authenticate_user(db: Session, email: str, password: str):
 # JWT generator
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=config.JWT_EXPIRATION_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=config.JWT_EXPIRATION_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
