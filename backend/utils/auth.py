@@ -23,7 +23,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
     return {
         "email": payload.get("sub"),
-        "role": payload.get("role", "user")
+        "role": payload.get("role", "user"),
+        "id": payload.get("id")
     }
 
 def require_admin(user: Dict = Depends(get_current_user)):
