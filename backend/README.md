@@ -544,7 +544,6 @@ Once the server is running, visit:
 ---
 
 ## Support
-For questions or issues, please refer to the source code or contact the development team.
+For questions or issues, please refer to the source code.
 
-**API Version**: 1.0  
-**Last Updated**: January 2024
+**Last Updated**: August 2025
