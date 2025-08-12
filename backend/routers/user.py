@@ -1,63 +1,130 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas.user import UserCreate, UserOut
-from services.user_service import create_user
-from core.database import SessionLocal
-from schemas.user import UserLogin, UserOut
-from services.user_service import authenticate_user, create_access_token
-from utils.auth import get_current_user,require_admin
-from models.user import User
-from utils.auth import get_current_user
-from sqlalchemy.orm import Session
-
+from schemas.user import UserCreate, UserLogin, UserProfileUpdate, UserOut
+from services.user_service import (
+    create_user, authenticate_user, create_access_token, 
+    get_user_by_id, get_user_by_email, update_user_profile, get_all_users
+)
+from core.database import get_db
+from utils.auth import get_current_user, require_admin
+from core.response import success_response, error_response
+from typing import List
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 @router.post("/register", response_model=UserOut)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    return create_user(db, user)
+    """Register a new user."""
+    try:
+        new_user = create_user(db, user)
+        return success_response(
+            data=UserOut.model_validate(new_user).model_dump(mode="json"),
+            message="User registered successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+
+
 
 @router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    user_obj = authenticate_user(db, user.email, user.password)
-    token = create_access_token({
-    "sub": user_obj.email,
-    "role": user_obj.role,
-    "id": user_obj.id  
-    })
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": user_obj.id,
-            "email": user_obj.email
+def login_user(user: UserLogin, db: Session = Depends(get_db)):
+    """Authenticate user and return JWT token."""
+    try:
+        authenticated_user = authenticate_user(db, user.email, user.password)
+        token_data = {
+            "sub": authenticated_user.email,
+            "role": authenticated_user.role,
+            "id": authenticated_user.id
         }
-    }
+        access_token = create_access_token(token_data)
+        return success_response(
+            data={
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": {
+                    "id": authenticated_user.id,
+                    "email": authenticated_user.email,
+                    "name": authenticated_user.name,
+                    "role": authenticated_user.role
+                }
+            },
+            message="Login successful"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
 
-@router.get("/profile")
-def get_profile(user=Depends(get_current_user)):
-    return {"message": f"Welcome, {user['email']}", "role": user["role"]}
+
+@router.get("/profile", response_model=UserOut)
+def get_profile(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user's profile."""
+    try:
+        db_user = get_user_by_id(db, user["id"])
+        return success_response(
+            data=UserOut.model_validate(db_user).model_dump(mode="json"),
+            message="Profile retrieved successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+
+
+@router.put("/profile", response_model=UserOut)
+def update_profile(
+    update_data: UserProfileUpdate,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update current user's profile."""
+    try:
+        updated_user = update_user_profile(db, user["id"], update_data)
+        return success_response(
+            data=UserOut.model_validate(updated_user).model_dump(mode="json"),
+            message="Profile updated successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+
 
 @router.get("/me", response_model=UserOut)
-def read_current_user(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == current_user["email"]).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+def read_current_user(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user details."""
+    try:
+        user = get_user_by_email(db, current_user["email"])
+        return success_response(
+            data=UserOut.model_validate(user).model_dump(mode="json"),
+            message="Current user retrieved successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
 
-@router.get("/admin/users", response_model=list[UserOut])
+@router.get("/admin/users", response_model=List[UserOut])
 def list_all_users(
     db: Session = Depends(get_db),
     admin_user=Depends(require_admin)
 ):
-    users = db.query(User).all()
-    return users
+    """List all users (Admin only)."""
+    try:
+        users = get_all_users(db)
+        return success_response(
+            data=[UserOut.model_validate(u).model_dump(mode="json") for u in users],
+            message="All users retrieved successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)

@@ -1,53 +1,55 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from core.database import SessionLocal
-from models.course import Course
+from core.database import get_db
 from schemas.course import CourseCreate, CourseOut
+from services.course_service import get_all_courses, create_course, search_courses
 from utils.auth import get_current_user, require_admin
-from sqlalchemy import or_, func
+from core.response import success_response, error_response
+from typing import List
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# ✅ Authenticated route — List all courses
-@router.get("/", response_model=list[CourseOut])
+@router.get("/", response_model=List[CourseOut])
 def list_courses(
     db: Session = Depends(get_db),
-    user=Depends(get_current_user)  # ⬅ added to protect access
+    user=Depends(get_current_user)
 ):
-    return db.query(Course).all()
+    """Get all available courses."""
+    try:
+        courses = get_all_courses(db)
+        return success_response(data=[CourseOut.model_validate(c).model_dump(mode="json") for c in courses], message="Courses retrieved successfully")
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
 
-# ✅ Admin-only route — Add course
 @router.post("/", response_model=CourseOut)
-def create_course(
+def create_new_course(
     course: CourseCreate,
     db: Session = Depends(get_db),
     admin_user=Depends(require_admin)
 ):
-    new_course = Course(**course.model_dump())
-    db.add(new_course)
-    db.commit()
-    db.refresh(new_course)
-    return new_course
+    """Create a new course (Admin only)."""
+    try:
+        new_course = create_course(db, course)
+        return success_response(data=CourseOut.model_validate(new_course).model_dump(mode="json"), message="Course created successfully")
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
 
-@router.get("/search", response_model=list[CourseOut])
-def search_courses(
+@router.get("/search", response_model=List[CourseOut])
+def search_courses_endpoint(
     keyword: str,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
     limit: int = 10
 ):
-    keyword_filter = f"%{keyword.lower()}%"
-    results = db.query(Course).filter(
-        or_(
-            func.lower(Course.title).like(keyword_filter),
-            func.lower(Course.description).like(keyword_filter)
-        )
-    ).limit(limit).all()
-    return results
+    """Search courses by keyword."""
+    try:
+        results = search_courses(db, keyword, limit)
+        return success_response(data=[CourseOut.model_validate(c).model_dump(mode="json") for c in results], message="Courses search results")
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)

@@ -1,32 +1,45 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas.notification import NotificationCreate, NotificationOut
-from models.notification import Notification
+from services.notification_service import create_notification, get_all_notifications
 from core.database import get_db
 from utils.auth import get_current_user, require_admin
-from datetime import datetime, timezone
+from core.response import success_response, error_response
+from typing import List
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 @router.post("/", response_model=NotificationOut)
-def create_notification(
+def create_new_notification(
     data: NotificationCreate,
     db: Session = Depends(get_db),
     admin_user=Depends(require_admin)
 ):
-    notification = Notification(
-        message=data.message,
-        created_by=admin_user["id"],
-        created_at=datetime.now(timezone.utc)
-    )
-    db.add(notification)
-    db.commit()
-    db.refresh(notification)
-    return notification
+    """Create a new notification (Admin only)."""
+    try:
+        notification = create_notification(db, data, admin_user["id"])
+        return success_response(
+            data=NotificationOut.model_validate(notification).model_dump(mode="json"),
+            message="Notification created successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
 
-@router.get("/", response_model=list[NotificationOut])
+@router.get("/", response_model=List[NotificationOut])
 def list_notifications(
     db: Session = Depends(get_db),
     user=Depends(get_current_user)
 ):
-    return db.query(Notification).order_by(Notification.created_at.desc()).all()
+    """Get all notifications ordered by creation date."""
+    try:
+        notifications = get_all_notifications(db)
+        return success_response(
+            data=[NotificationOut.model_validate(n).model_dump(mode="json") for n in notifications],
+            message="Notifications retrieved successfully"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
