@@ -6,6 +6,12 @@ from core.error_handlers import init_error_handlers
 from core.middleware import ResponseTimeMiddleware
 from core import config
 
+# Import logging configuration before app startup
+from core.logging_config import get_logger
+
+# Initialize logger
+logger = get_logger()
+logger.info("Starting FastAPI LMS application")
 
 app = FastAPI()
 
@@ -13,9 +19,11 @@ create_tables()
 
 init_error_handlers(app)
 
-# Add SessionMiddleware for OAuth2 session handling
+# Middleware order as specified:
+# 1. SessionMiddleware for OAuth2 session handling
 app.add_middleware(SessionMiddleware, secret_key=config.SESSION_SECRET_KEY)
 
+# 2. Logging middleware (ResponseTimeMiddleware with integrated logging)
 app.add_middleware(ResponseTimeMiddleware)
 
 # Include Routers
