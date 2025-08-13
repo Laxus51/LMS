@@ -30,6 +30,52 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
+## Authentication
+
+### Google OAuth
+
+#### GET /auth/google/login
+**Description:** Redirect users to Google's OAuth2 login page  
+**Authentication:** None required  
+**Response:** Redirects to Google OAuth consent screen
+
+#### GET /auth/google/callback
+**Description:** Handle OAuth2 callback from Google (automatically called after user consent)  
+**Authentication:** None required (handled by Google OAuth flow)  
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "bearer",
+    "user": {
+      "id": 1,
+      "email": "user@gmail.com",
+      "name": "John Doe",
+      "role": "user"
+    }
+  }
+}
+```
+
+#### GET /auth/google/status
+**Description:** Check if Google OAuth is properly configured  
+**Authentication:** None required  
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Google OAuth is properly configured",
+  "data": {
+    "configured": true
+  }
+}
+```
+
+---
+
 ## User Management
 
 ### Public Endpoints
@@ -508,6 +554,10 @@ JWT_SECRET_KEY=your-super-secret-jwt-key-here
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_MINUTES=30
 
+# Google OAuth Configuration (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
 # Application Settings
 DEBUG=True
 APP_NAME=LMS Backend API
@@ -535,6 +585,57 @@ APP_NAME=LMS Backend API
    ```bash
    uvicorn main:app --reload
    ```
+
+### Running Tests
+
+This project uses pytest for testing. The test suite includes comprehensive tests for user management, course management, authentication, and authorization.
+
+#### Prerequisites for Testing
+- All dependencies installed (`pip install -r requirements.txt`)
+- No database setup required (tests use in-memory SQLite)
+
+#### Running All Tests
+```bash
+pytest
+```
+
+#### Running Tests with Verbose Output
+```bash
+pytest -v
+```
+
+#### Running Specific Test Files
+```bash
+# Test user-related functionality
+pytest tests/test_users.py -v
+
+# Test course-related functionality
+pytest tests/test_courses.py -v
+```
+
+#### Running Specific Test Classes
+```bash
+# Test user registration only
+pytest tests/test_users.py::TestUserRegistration -v
+
+# Test course creation only
+pytest tests/test_courses.py::TestCourseCreation -v
+```
+
+#### Test Coverage
+The test suite covers:
+- **User Management**: Registration, login, profile management, admin operations
+- **Authentication**: JWT token validation, OAuth integration
+- **Authorization**: Role-based access control (user vs admin)
+- **Course Management**: CRUD operations, search functionality
+- **API Response Structure**: Consistent response format validation
+- **Error Handling**: Various error scenarios and edge cases
+
+#### Test Database
+- Tests use an isolated in-memory SQLite database
+- Each test gets a fresh database instance
+- No cleanup required after running tests
+- Tests do not affect your development database
 
 ### API Documentation
 Once the server is running, visit:
