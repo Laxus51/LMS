@@ -59,6 +59,10 @@ def get_user_by_id(db: Session, user_id: int) -> User:
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Get a user by their email."""
+    return db.query(User).filter(User.email == email).first()
+
+def get_user_by_email_strict(db: Session, email: str) -> User:
+    """Get a user by their email, raise exception if not found."""
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -84,3 +88,16 @@ def update_user_profile(db: Session, user_id: int, update_data: UserProfileUpdat
 def get_all_users(db: Session) -> list[User]:
     """Get all users (admin function)."""
     return db.query(User).all()
+
+def create_user_oauth(db: Session, user: UserCreate) -> User:
+    """Create a new user for OAuth (without checking if user exists)."""
+    try:
+        hashed_password = get_password_hash(user.password)
+        new_user = User(email=user.email, hashed_password=hashed_password, name=user.name)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
