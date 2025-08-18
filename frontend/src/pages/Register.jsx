@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import AuthLayout from '../components/AuthLayout';
+import { useAuth } from '../contexts/AuthContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
 
   // Handle error messages from redirects (e.g., Google OAuth failures)
   useEffect(() => {
@@ -68,19 +70,33 @@ const Register = () => {
     try {
       const response = await api.post('/users/register', formData);
       
-      // Store JWT token
+      // Store JWT token and user data
       if (response.data.data && response.data.data.access_token) {
-        localStorage.setItem('token', response.data.data.access_token);
+        const { access_token, user } = response.data.data;
+        login(access_token, user);
         navigate('/dashboard');
       } else {
         setError('Registration failed. Please try again.');
       }
     } catch (err) {
-      setError(
-        err.response?.data?.detail || 
-        err.response?.data?.message || 
-        'Registration failed. Please try again.'
-      );
+      console.error('Registration error:', err);
+      
+      // Provide specific error messages based on status code
+      if (err.response?.status === 409) {
+        setError('An account with this email already exists. Please use a different email or try signing in.');
+      } else if (err.response?.status === 400) {
+        setError('Please check your information and try again. Make sure all fields are filled correctly.');
+      } else if (err.response?.status >= 500) {
+        setError('Our servers are experiencing issues. Please try again in a few minutes.');
+      } else if (!navigator.onLine) {
+        setError('No internet connection. Please check your network and try again.');
+      } else {
+        setError(
+          err.response?.data?.detail || 
+          err.response?.data?.message || 
+          'Unable to create your account right now. Please try again later.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -149,9 +165,16 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Creating Account...
+                </div>
+              ) : (
+                'Create Account'
+              )}
             </button>
           </form>
 
@@ -168,6 +191,8 @@ const Register = () => {
             <button
               type="button"
               onClick={() => {
+                // Store intended route in sessionStorage for Google OAuth callback
+                sessionStorage.setItem('oauth_intended_route', '/dashboard');
                 window.location.href = `${import.meta.env.VITE_API_URL}/auth/google/login`;
               }}
               disabled={loading}

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from core.database import Base
 
 class User(Base):
@@ -9,3 +9,5 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, nullable=False, default="user")
     name = Column(String, nullable=True)
+    auth_method = Column(String, nullable=False, default="email")  # "email" or "google"
+    has_password = Column(Boolean, nullable=False, default=True)  # False for OAuth users who haven't set a password

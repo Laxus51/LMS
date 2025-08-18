@@ -76,24 +76,40 @@ def update_user_profile(db: Session, user_id: int, update_data: UserProfileUpdat
         if update_data.name is not None:
             user.name = update_data.name
         if update_data.password is not None:
+            # For OAuth users who haven't set a password yet, allow setting any password
+            if user.has_password:
+                # Check if the new password is the same as the current one
+                if verify_password(update_data.password, user.hashed_password):
+                    raise HTTPException(status_code=400, detail="New password cannot be the same as the current password")
+            
             user.hashed_password = get_password_hash(update_data.password)
+            user.has_password = True  # Mark that user now has a password
         
         db.commit()
         db.refresh(user)
         return user
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update user profile: {str(e)}")
 
 def get_all_users(db: Session) -> list[User]:
     """Get all users (admin function)."""
-    return db.query(User).all()
+    return db.query(User).order_by(User.id.asc()).all()
 
 def create_user_oauth(db: Session, user: UserCreate) -> User:
     """Create a new user for OAuth (without checking if user exists)."""
     try:
         hashed_password = get_password_hash(user.password)
-        new_user = User(email=user.email, hashed_password=hashed_password, name=user.name)
+        new_user = User(
+            email=user.email, 
+            hashed_password=hashed_password, 
+            name=user.name,
+            auth_method="google",
+            has_password=False  # OAuth users start without a user-set password
+        )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)

@@ -31,3 +31,15 @@ def get_notification_by_id(db: Session, notification_id: int) -> Notification:
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     return notification
+
+def mark_notification_as_read(db: Session, notification_id: int) -> Notification:
+    """Mark a notification as read."""
+    try:
+        notification = get_notification_by_id(db, notification_id)
+        notification.is_read = True
+        db.commit()
+        db.refresh(notification)
+        return notification
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to mark notification as read: {str(e)}")

@@ -30,9 +30,7 @@ def get_modules_by_course(db: Session, course_id: int) -> List[Module]:
         raise HTTPException(status_code=404, detail="Course not found")
     
     modules = db.query(Module).filter(Module.course_id == course_id).all()
-    if not modules:
-        raise HTTPException(status_code=404, detail="No modules found for this course")
-    
+    # Return empty list if no modules found instead of raising exception
     return modules
 
 def get_module_by_id(db: Session, module_id: int) -> Optional[Module]:

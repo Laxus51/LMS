@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
@@ -11,5 +11,6 @@ class Notification(Base):
     message = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     created_by = Column(Integer, ForeignKey("users.id"))
+    is_read = Column(Boolean, default=False, nullable=False)
 
     creator = relationship("User")

@@ -9,6 +9,7 @@ class NotificationOut(BaseModel):
     message: str
     created_at: datetime
     created_by: int
+    is_read: bool
 
     model_config = {
         "from_attributes": True

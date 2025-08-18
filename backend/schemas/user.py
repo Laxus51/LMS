@@ -11,6 +11,8 @@ class UserOut(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     role: str 
+    auth_method: str = "email"
+    has_password: bool = True
 
     model_config = {
         "from_attributes": True

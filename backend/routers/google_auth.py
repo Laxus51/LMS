@@ -58,6 +58,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     """
     Handle the OAuth2 callback from Google.
     Get user profile info and either login existing user or create new user.
+    Redirect to frontend with token and user info in query parameters.
     """
     try:
         # Get the authorization token from Google
@@ -66,18 +67,20 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         # Get user info from Google
         user_info = token.get('userinfo')
         if not user_info:
-            return error_response(
-                message="Failed to get user information from Google",
-                status_code=400
+            # Redirect to frontend with error
+            return RedirectResponse(
+                url="http://localhost:5173/auth/google/callback?error=failed_to_get_user_info",
+                status_code=302
             )
         
         email = user_info.get('email')
         name = user_info.get('name', '')
         
         if not email:
-            return error_response(
-                message="Email not provided by Google",
-                status_code=400
+            # Redirect to frontend with error
+            return RedirectResponse(
+                url="http://localhost:5173/auth/google/callback?error=email_not_provided",
+                status_code=302
             )
         
         # Check if user exists in database
@@ -85,16 +88,20 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         
         if existing_user:
             # User exists, create JWT token
-            access_token = create_access_token(data={"sub": str(existing_user.id)})
+            token_data = {
+                "sub": existing_user.email,
+                "role": existing_user.role,
+                "id": existing_user.id
+            }
+            access_token = create_access_token(data=token_data)
             user_out = UserOut.model_validate(existing_user)
             
-            return success_response(
-                data={
-                    "access_token": access_token,
-                    "token_type": "bearer",
-                    "user": user_out.model_dump(mode="json")
-                },
-                message="Login successful"
+            redirect_url = f"http://localhost:5173/auth/google/callback?token={access_token}&email={email}&name={existing_user.name or ''}&user_id={existing_user.id}"
+            
+            # Redirect to frontend with token and user info
+            return RedirectResponse(
+                url=redirect_url,
+                status_code=302
             )
         else:
             # User doesn't exist, create new user
@@ -109,27 +116,33 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             new_user = create_user_oauth(db, user_create)
             
             # Create JWT token for new user
-            access_token = create_access_token(data={"sub": str(new_user.id)})
+            token_data = {
+                "sub": new_user.email,
+                "role": new_user.role,
+                "id": new_user.id
+            }
+            access_token = create_access_token(data=token_data)
             user_out = UserOut.model_validate(new_user)
             
-            return success_response(
-                data={
-                    "access_token": access_token,
-                    "token_type": "bearer",
-                    "user": user_out.model_dump(mode="json")
-                },
-                message="Account created and login successful"
+            redirect_url = f"http://localhost:5173/auth/google/callback?token={access_token}&email={email}&name={new_user.name or ''}&user_id={new_user.id}"
+            
+            # Redirect to frontend with token and user info
+            return RedirectResponse(
+                url=redirect_url,
+                status_code=302
             )
             
     except HTTPException as he:
-        return error_response(
-            message=he.detail,
-            status_code=he.status_code
+        # Redirect to frontend with error
+        return RedirectResponse(
+            url=f"http://localhost:5173/auth/google/callback?error={he.detail}",
+            status_code=302
         )
     except Exception as e:
-        return error_response(
-            message=f"OAuth callback failed: {str(e)}",
-            status_code=500
+        # Redirect to frontend with error
+        return RedirectResponse(
+            url=f"http://localhost:5173/auth/google/callback?error=oauth_callback_failed",
+            status_code=302
         )
 
 @router.get("/status")

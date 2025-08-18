@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.database import get_db
 from schemas.course import CourseCreate, CourseOut
-from services.course_service import get_all_courses, create_course, search_courses
+from services.course_service import get_all_courses, create_course, search_courses, get_course_by_id
 from utils.auth import get_current_user, require_admin
 from core.response import success_response, error_response
 from typing import List
@@ -49,6 +49,21 @@ def search_courses_endpoint(
     try:
         results = search_courses(db, keyword, limit)
         return success_response(data=[CourseOut.model_validate(c).model_dump(mode="json") for c in results], message="Courses search results")
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+
+@router.get("/{course_id}", response_model=CourseOut)
+def get_course_details(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    """Get details of a specific course."""
+    try:
+        course = get_course_by_id(db, course_id)
+        return success_response(data=CourseOut.model_validate(course).model_dump(mode="json"), message="Course retrieved successfully")
     except HTTPException as e:
         return error_response(message=e.detail, status_code=e.status_code)
     except Exception as e:

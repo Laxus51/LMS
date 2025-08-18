@@ -1,59 +1,93 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const GoogleCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [status, setStatus] = useState('processing'); // 'processing', 'success', 'error'
+  const { login } = useAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get token from URL query params
-        const token = searchParams.get('token');
+        
+        // Check for error in URL params first
         const error = searchParams.get('error');
-
         if (error) {
           console.error('OAuth error:', error);
           setStatus('error');
+          
+          // Map backend error codes to user-friendly messages
+          let errorMessage = 'Google authentication failed. Please try again.';
+          if (error === 'failed_to_get_user_info') {
+            errorMessage = 'Failed to get user information from Google. Please try again.';
+          } else if (error === 'email_not_provided') {
+            errorMessage = 'Email not provided by Google. Please try again.';
+          } else if (error === 'oauth_callback_failed') {
+            errorMessage = 'OAuth authentication failed. Please try again.';
+          }
+          
           setTimeout(() => {
             navigate('/login', { 
-              state: { error: 'Google authentication failed. Please try again.' } 
+              state: { error: errorMessage } 
             });
           }, 2000);
           return;
         }
 
-        if (token) {
-          // Save token to localStorage
-          localStorage.setItem('token', token);
-          setStatus('success');
-          
-          // Redirect to dashboard after a brief delay
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
-        } else {
+        // Get token and user info from URL params (sent by backend redirect)
+        const token = searchParams.get('token');
+        const email = searchParams.get('email');
+        const name = searchParams.get('name');
+        const userId = searchParams.get('user_id');
+        
+        if (!token || !email) {
           setStatus('error');
           setTimeout(() => {
             navigate('/login', { 
-              state: { error: 'No authentication token received. Please try again.' } 
+              state: { error: 'Invalid authentication response. Please try again.' } 
             });
           }, 2000);
+          return;
         }
+
+        // Create user object from URL parameters
+        const user = {
+          id: parseInt(userId),
+          email: email,
+          name: name || '',
+          role: 'user' // Default role for OAuth users
+        };
+        
+        // Save token and user data using AuthContext
+        login(token, user);
+        
+        // Get intended route from sessionStorage (set during OAuth initiation) or default to dashboard
+        const from = sessionStorage.getItem('oauth_intended_route') || '/dashboard';
+        // Clear the stored route after use
+        sessionStorage.removeItem('oauth_intended_route');
+        
+        // Redirect immediately without showing success page
+        navigate(from, { replace: true });
+        
       } catch (err) {
         console.error('Callback processing error:', err);
         setStatus('error');
+        
+        const errorMessage = err.message || 'Authentication failed. Please try again.';
+        
         setTimeout(() => {
           navigate('/login', { 
-            state: { error: 'Authentication failed. Please try again.' } 
+            state: { error: errorMessage } 
           });
         }, 2000);
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, location, login]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

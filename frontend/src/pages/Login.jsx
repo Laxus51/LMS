@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import AuthLayout from '../components/AuthLayout';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
+  
+  // Get the intended path from location state
+  const from = location.state?.from?.pathname || '/dashboard';
 
   // Handle error messages from redirects (e.g., Google OAuth failures)
   useEffect(() => {
@@ -62,19 +67,34 @@ const Login = () => {
     try {
       const response = await api.post('/users/login', formData);
       
-      // Store JWT token
+      // Store JWT token and user data
       if (response.data.data && response.data.data.access_token) {
-        localStorage.setItem('token', response.data.data.access_token);
-        navigate('/dashboard');
+        const { access_token, user } = response.data.data;
+        login(access_token, user);
+        // Redirect to intended path or dashboard
+        navigate(from, { replace: true });
       } else {
         setError('Login failed. Please try again.');
       }
     } catch (err) {
-      setError(
-        err.response?.data?.detail || 
-        err.response?.data?.message || 
-        'Login failed. Please check your credentials.'
-      );
+      console.error('Login error:', err);
+      
+      // Provide specific error messages based on status code
+      if (err.response?.status === 401) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (err.response?.status === 429) {
+        setError('Too many login attempts. Please wait a few minutes before trying again.');
+      } else if (err.response?.status >= 500) {
+        setError('Our servers are experiencing issues. Please try again in a few minutes.');
+      } else if (!navigator.onLine) {
+        setError('No internet connection. Please check your network and try again.');
+      } else {
+        setError(
+          err.response?.data?.detail || 
+          err.response?.data?.message || 
+          'Unable to sign in right now. Please try again later.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -127,9 +147,16 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Signing In...
+                </div>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 
@@ -146,6 +173,8 @@ const Login = () => {
             <button
               type="button"
               onClick={() => {
+                // Store intended route in sessionStorage for Google OAuth callback
+                sessionStorage.setItem('oauth_intended_route', from);
                 window.location.href = `${import.meta.env.VITE_API_URL}/auth/google/login`;
               }}
               disabled={loading}
