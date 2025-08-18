@@ -12,13 +12,29 @@ from typing import List
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-@router.post("/register", response_model=UserOut)
+@router.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user."""
+    """Register a new user and return access token."""
     try:
         new_user = create_user(db, user)
+        # Generate access token for the new user
+        token_data = {
+            "sub": new_user.email,
+            "role": new_user.role,
+            "id": new_user.id
+        }
+        access_token = create_access_token(token_data)
         return success_response(
-            data=UserOut.model_validate(new_user).model_dump(mode="json"),
+            data={
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": {
+                    "id": new_user.id,
+                    "email": new_user.email,
+                    "name": new_user.name,
+                    "role": new_user.role
+                }
+            },
             message="User registered successfully"
         )
     except HTTPException as e:

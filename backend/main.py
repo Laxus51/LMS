@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from routers import health, user, courses, module, progress, notifications, google_auth
 from core.database import create_tables
@@ -18,6 +19,15 @@ app = FastAPI()
 create_tables()
 
 init_error_handlers(app)
+
+# CORS middleware to allow frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Middleware order as specified:
 # 1. SessionMiddleware for OAuth2 session handling
