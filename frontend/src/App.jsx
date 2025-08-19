@@ -9,7 +9,6 @@ import UserProfile from './pages/UserProfile';
 import AdminUsers from './pages/AdminUsers';
 import CourseCreation from './pages/CourseCreation';
 import ModuleCreation from './pages/ModuleCreation';
-import Notifications from './pages/Notifications';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -83,14 +82,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/notifications" 
-              element={
-                <ProtectedRoute>
-                  <Notifications />
-                </ProtectedRoute>
-              } 
-            />
+
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

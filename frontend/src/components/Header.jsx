@@ -1,12 +1,18 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import NotificationPanel from './NotificationPanel';
 
 const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const desktopProfileDropdownRef = useRef(null);
+  const mobileProfileDropdownRef = useRef(null);
 
   // Function to check if a path is currently active
   const isActive = (path) => {
@@ -37,7 +43,74 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
     closeMobileMenu();
   };
 
+  const toggleNotificationPanel = () => {
+    setIsNotificationPanelOpen(!isNotificationPanelOpen);
+  };
+
+  const closeNotificationPanel = () => {
+    setIsNotificationPanelOpen(false);
+  };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(!isProfileDropdownOpen);
+  };
+
+  const closeProfileDropdown = () => {
+    setIsProfileDropdownOpen(false);
+  };
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch('http://localhost:8000/notifications/', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const notifications = data.data || [];
+          const unread = notifications.filter(notif => !notif.is_read).length;
+          setUnreadCount(unread);
+        }
+      } catch (err) {
+        console.error('Failed to fetch notification count:', err);
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle outside click for profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const isOutsideDesktop = desktopProfileDropdownRef.current && !desktopProfileDropdownRef.current.contains(event.target);
+      const isOutsideMobile = mobileProfileDropdownRef.current && !mobileProfileDropdownRef.current.contains(event.target);
+      
+      if (isOutsideDesktop && isOutsideMobile) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileDropdownOpen]);
+
   return (
+    <>
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -92,32 +165,69 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
               </button>
               
               <button
-                onClick={() => navigate('/notifications')}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                  isActive('/notifications')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                onClick={toggleNotificationPanel}
+                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                title="Notifications"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <span className="text-sm font-medium">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               
-              <button
-                onClick={() => navigate('/profile')}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                  isActive('/profile')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span className="text-sm font-medium">Profile</span>
-              </button>
+              {/* Profile Dropdown */}
+              <div className="relative" ref={desktopProfileDropdownRef}>
+                <button
+                  onClick={toggleProfileDropdown}
+                  className={`flex items-center px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/profile') || isProfileDropdownOpen
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Dropdown Menu */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <button
+                      onClick={() => {
+                        navigate('/profile');
+                        closeProfileDropdown();
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>Edit Profile</span>
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        closeProfileDropdown();
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               {user?.role === 'admin' && (
                 <button
@@ -135,17 +245,27 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
                 </button>
               )}
             </nav>
-            
-            <button
-              onClick={handleLogout}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              Logout
-            </button>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile actions */}
+          <div className="md:hidden flex items-center space-x-2">
+            {/* Mobile notification bell */}
+            <button
+              onClick={toggleNotificationPanel}
+              className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              title="Notifications"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            
+            {/* Mobile menu button */}
             <button
               onClick={toggleMobileMenu}
               className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -203,32 +323,75 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
               </button>
               
               <button
-                onClick={() => handleNavigation('/notifications')}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                  isActive('/notifications')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                onClick={toggleNotificationPanel}
+                className="relative w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               
-              <button
-                onClick={() => handleNavigation('/profile')}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                  isActive('/profile')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span>Profile</span>
-              </button>
+              {/* Mobile Profile Dropdown */}
+              <div className="relative" ref={mobileProfileDropdownRef}>
+                <button
+                  onClick={toggleProfileDropdown}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center justify-between ${
+                    isActive('/profile') || isProfileDropdownOpen
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Profile</span>
+                  </div>
+                  <svg className={`w-4 h-4 transition-transform duration-200 ${
+                    isProfileDropdownOpen ? 'rotate-180' : ''
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Mobile Dropdown Menu */}
+                {isProfileDropdownOpen && (
+                  <div className="mt-2 ml-8 space-y-1">
+                    <button
+                      onClick={() => {
+                        handleNavigation('/profile');
+                        closeProfileDropdown();
+                        closeMobileMenu();
+                      }}
+                      className="w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Edit Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        closeProfileDropdown();
+                        closeMobileMenu();
+                      }}
+                      className="w-full text-left px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               {user?.role === 'admin' && (
                 <button
@@ -245,24 +408,46 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
                   <span>Manage Users</span>
                 </button>
               )}
-              
-              {/* Logout button */}
-              <div className="pt-2 border-t border-gray-100">
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 flex items-center space-x-3"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Logout</span>
-                </button>
-              </div>
+
             </div>
           </div>
         )}
       </div>
     </header>
+    
+    {/* Notification Panel */}
+    <NotificationPanel 
+      isOpen={isNotificationPanelOpen} 
+      onClose={closeNotificationPanel}
+      onNotificationUpdate={() => {
+        // Refresh unread count when notifications are updated
+        const fetchUnreadCount = async () => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await fetch('http://localhost:8000/notifications/', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const notifications = data.data || [];
+              const unread = notifications.filter(notif => !notif.is_read).length;
+              setUnreadCount(unread);
+            }
+          } catch (err) {
+            console.error('Failed to fetch notification count:', err);
+          }
+        };
+        fetchUnreadCount();
+      }}
+    />
+    
+
+    </>
   );
 };
 
