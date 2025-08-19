@@ -1,7 +1,58 @@
-# LMS Backend API Documentation
+# Learning Management System (LMS) Backend
 
-## Overview
-This project is a Learning Management System (LMS) backend built with FastAPI. It provides comprehensive APIs for user management, course administration, module tracking, progress monitoring, and notifications.
+A FastAPI-based backend for a Learning Management System with comprehensive course management, user authentication, progress tracking, notifications, and Google OAuth integration.
+
+## Features
+
+- **User Management**: Registration, authentication, profile management, and admin user listing
+- **Course Management**: Create, read, and search courses with module support
+- **Progress Tracking**: Track student completion of modules with completion/uncompletion functionality
+- **Notifications**: Admin-created notifications with read status tracking
+- **Google OAuth**: Google Sign-In integration alongside traditional email authentication
+- **Admin Dashboard**: Dashboard statistics and administrative functions
+- **JWT Authentication**: Secure token-based authentication with role-based access
+- **Database Integration**: PostgreSQL with SQLAlchemy ORM
+- **API Documentation**: Auto-generated Swagger/OpenAPI docs
+
+## Tech Stack
+
+- **Framework**: FastAPI 0.116.1
+- **Database**: PostgreSQL with SQLAlchemy 2.0.42
+- **Authentication**: JWT + Google OAuth (Authlib)
+- **Password Hashing**: bcrypt
+- **Environment Management**: python-dotenv
+
+## Project Structure
+
+```
+backend/
+├── core/                   # Core configuration and utilities
+│   ├── config.py          # Environment and OAuth configuration
+│   ├── database.py        # Database connection and session
+│   └── response.py        # Standardized API responses
+├── models/                 # SQLAlchemy database models
+│   ├── user.py           # User model with OAuth support
+│   ├── course.py         # Course model
+│   ├── module.py         # Module model
+│   ├── progress.py       # Progress tracking model
+│   └── notification.py   # Notification model
+├── schemas/               # Pydantic schemas for request/response
+├── services/              # Business logic layer
+├── routers/               # API route handlers
+│   ├── user.py           # User and admin endpoints
+│   ├── courses.py        # Course management
+│   ├── module.py         # Module management
+│   ├── progress.py       # Progress tracking
+│   ├── notifications.py  # Notification system
+│   ├── google_auth.py    # Google OAuth integration
+│   ├── dashboard.py      # Dashboard statistics
+│   └── health.py         # Health check endpoint
+├── utils/                 # Utility functions
+│   └── auth.py           # Authentication and authorization
+├── tests/                 # Test files
+├── main.py               # FastAPI application entry point
+└── requirements.txt      # Python dependencies
+```
 
 ## Base URL
 ```
@@ -16,440 +67,72 @@ Authorization: Bearer <your_jwt_token>
 
 ## API Endpoints
 
-### Health Check
+### Authentication
 
-#### GET /health
-**Description:** Check the health status of the application  
-**Authentication:** None required  
-**Response:**
-```json
-{
-  "status": "ok"
-}
-```
+#### Traditional Authentication
+- `POST /users/register` - Register new user with email/password
+- `POST /users/login` - Login with email/password
+- `GET /users/profile` - Get current user profile
+- `PUT /users/profile` - Update user profile
+- `GET /users/me` - Get current user details
+
+#### Google OAuth
+- `GET /auth/google/login` - Initiate Google OAuth flow
+- `GET /auth/google/callback` - Handle Google OAuth callback
+- `GET /auth/google/status` - Check Google OAuth configuration
+
+### User Management (Admin)
+- `GET /users/admin/users` - List all users (Admin only)
+
+### Course Management
+- `GET /courses/` - List all courses
+- `POST /courses/` - Create new course (Admin only)
+- `GET /courses/search` - Search courses by keyword
+- `GET /courses/{course_id}` - Get course details
+
+### Module Management
+- `POST /courses/{course_id}/modules` - Add module to course (Admin only)
+- `GET /courses/{course_id}/modules` - List course modules
+
+### Progress Tracking
+- `POST /progress/modules/{module_id}/complete` - Mark module as completed
+- `POST /progress/modules/{module_id}/uncomplete` - Unmark module completion
+- `GET /progress/user` - Get current user's progress
+
+### Notifications
+- `POST /notifications/` - Create notification (Admin only)
+- `GET /notifications/` - List all notifications
+- `PATCH /notifications/{notification_id}/read` - Mark notification as read
+
+### Dashboard
+- `GET /dashboard/stats` - Get dashboard statistics
+
+### Health Check
+- `GET /health` - API health status
 
 ---
 
 ## Authentication
 
-### Google OAuth
+All endpoints except `/health` and Google OAuth endpoints require JWT authentication. Include the token in the Authorization header:
 
-#### GET /auth/google/login
-**Description:** Redirect users to Google's OAuth2 login page  
-**Authentication:** None required  
-**Response:** Redirects to Google OAuth consent screen
-
-#### GET /auth/google/callback
-**Description:** Handle OAuth2 callback from Google (automatically called after user consent)  
-**Authentication:** None required (handled by Google OAuth flow)  
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "bearer",
-    "user": {
-      "id": 1,
-      "email": "user@gmail.com",
-      "name": "John Doe",
-      "role": "user"
-    }
-  }
-}
+```
+Authorization: Bearer <jwt_token>
 ```
 
-#### GET /auth/google/status
-**Description:** Check if Google OAuth is properly configured  
-**Authentication:** None required  
-**Response:**
+### Role-Based Access
+- **Admin**: Full access to all endpoints including user management, course/module creation, and notifications
+- **User**: Access to courses, modules, progress tracking, and profile management
+
+## Response Format
+
+All API responses follow a consistent format:
+
 ```json
 {
-  "success": true,
-  "message": "Google OAuth is properly configured",
-  "data": {
-    "configured": true
-  }
-}
-```
-
----
-
-## User Management
-
-### Public Endpoints
-
-#### POST /users/register
-**Description:** Register a new user account  
-**Authentication:** None required  
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "securepassword123",
-  "name": "John Doe"
-}
-```
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "id": 1,
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "user"
-  }
-}
-```
-
-#### POST /users/login
-**Description:** Authenticate user and receive JWT token  
-**Authentication:** None required  
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "bearer",
-    "user": {
-      "id": 1,
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "user"
-    }
-  }
-}
-```
-
-### Protected Endpoints
-
-#### GET /users/profile
-**Description:** Get current user's profile information  
-**Authentication:** JWT token required  
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Profile retrieved successfully",
-  "data": {
-    "id": 1,
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "user"
-  }
-}
-```
-
-#### PUT /users/profile
-**Description:** Update current user's profile  
-**Authentication:** JWT token required  
-**Request Body:**
-```json
-{
-  "name": "John Smith",
-  "password": "newpassword123"
-}
-```
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Profile updated successfully",
-  "data": {
-    "id": 1,
-    "email": "user@example.com",
-    "name": "John Smith",
-    "role": "user"
-  }
-}
-```
-
-#### GET /users/me
-**Description:** Get current user details  
-**Authentication:** JWT token required  
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Current user retrieved successfully",
-  "data": {
-    "id": 1,
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "user"
-  }
-}
-```
-
-### Admin Endpoints
-
-#### GET /users/admin/users
-**Description:** List all users in the system  
-**Authentication:** Admin JWT token required  
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "All users retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "user"
-    },
-    {
-      "id": 2,
-      "email": "admin@example.com",
-      "name": "Admin User",
-      "role": "admin"
-    }
-  ]
-}
-```
-
----
-
-## Course Management
-
-### Protected Endpoints
-
-#### GET /courses/
-**Description:** List all available courses  
-**Authentication:** JWT token required  
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Courses retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "title": "Introduction to Python",
-      "description": "Learn Python programming from basics to advanced",
-      "instructor_name": "Dr. Jane Smith"
-    },
-    {
-      "id": 2,
-      "title": "Web Development with FastAPI",
-      "description": "Build modern web APIs with FastAPI",
-      "instructor_name": "Prof. John Wilson"
-    }
-  ]
-}
-```
-
-#### GET /courses/search
-**Description:** Search courses by keyword  
-**Authentication:** JWT token required  
-**Query Parameters:**
-- `keyword` (string, required): Search term
-- `limit` (integer, optional): Maximum results (default: 10)
-
-**Example:** `/courses/search?keyword=python&limit=5`
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Courses search results",
-  "data": [
-    {
-      "id": 1,
-      "title": "Introduction to Python",
-      "description": "Learn Python programming from basics to advanced",
-      "instructor_name": "Dr. Jane Smith"
-    }
-  ]
-}
-```
-
-### Admin Endpoints
-
-#### POST /courses/
-**Description:** Create a new course  
-**Authentication:** Admin JWT token required  
-**Request Body:**
-```json
-{
-  "title": "Advanced JavaScript",
-  "description": "Master advanced JavaScript concepts and patterns",
-  "instructor_name": "Sarah Johnson"
-}
-```
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Course created successfully",
-  "data": {
-    "id": 3,
-    "title": "Advanced JavaScript",
-    "description": "Master advanced JavaScript concepts and patterns",
-    "instructor_name": "Sarah Johnson"
-  }
-}
-```
-
----
-
-## Module Management
-
-### Protected Endpoints
-
-#### GET /courses/{course_id}/modules
-**Description:** List all modules for a specific course  
-**Authentication:** JWT token required  
-**Path Parameters:**
-- `course_id` (integer): ID of the course
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Modules retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "title": "Python Basics",
-      "content_link": "https://example.com/python-basics"
-    },
-    {
-      "id": 2,
-      "title": "Variables and Data Types",
-      "content_link": "https://example.com/variables-datatypes"
-    }
-  ]
-}
-```
-
-### Admin Endpoints
-
-#### POST /courses/{course_id}/modules
-**Description:** Add a new module to a course  
-**Authentication:** Admin JWT token required  
-**Path Parameters:**
-- `course_id` (integer): ID of the course
-
-**Request Body:**
-```json
-{
-  "title": "Functions and Methods",
-  "content_link": "https://example.com/functions-methods"
-}
-```
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Module created successfully",
-  "data": {
-    "id": 3,
-    "title": "Functions and Methods",
-    "content_link": "https://example.com/functions-methods"
-  }
-}
-```
-
----
-
-## Progress Tracking
-
-### Student Endpoints
-
-#### POST /modules/{module_id}/complete
-**Description:** Mark a module as completed (Students only)  
-**Authentication:** JWT token required (user role)  
-**Path Parameters:**
-- `module_id` (integer): ID of the module to complete
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Module marked as completed",
-  "data": {
-    "id": 1,
-    "module_id": 5,
-    "status": "completed"
-  }
-}
-```
-
-**Error Response (Admin/Instructor trying to complete):**
-```json
-{
-  "success": false,
-  "message": "Only students can complete modules",
-  "status_code": 403
-}
-```
-
----
-
-## Notifications
-
-### Protected Endpoints
-
-#### GET /notifications/
-**Description:** List all notifications ordered by creation date  
-**Authentication:** JWT token required  
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Notifications retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "message": "New course 'Advanced JavaScript' has been added!",
-      "created_at": "2024-01-15T10:30:00Z",
-      "created_by": 2
-    },
-    {
-      "id": 2,
-      "message": "System maintenance scheduled for this weekend",
-      "created_at": "2024-01-14T09:15:00Z",
-      "created_by": 1
-    }
-  ]
-}
-```
-
-### Admin Endpoints
-
-#### POST /notifications/
-**Description:** Create a new notification  
-**Authentication:** Admin JWT token required  
-**Request Body:**
-```json
-{
-  "message": "Welcome to the new semester! Check out our latest courses."
-}
-```
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Notification created successfully",
-  "data": {
-    "id": 3,
-    "message": "Welcome to the new semester! Check out our latest courses.",
-    "created_at": "2024-01-16T14:20:00Z",
-    "created_by": 2
-  }
+  "success": true|false,
+  "data": {...},
+  "message": "Description of the result"
 }
 ```
 
@@ -526,18 +209,22 @@ All endpoints return standardized error responses in the following format:
 
 ---
 
-## Rate Limiting
-Currently, no rate limiting is implemented. Consider implementing rate limiting for production use.
+## Database Models
 
----
+- **User**: Email/password authentication, Google OAuth support, role-based access
+- **Course**: Title, description, instructor information
+- **Module**: Course content with external links
+- **Progress**: User completion tracking per module
+- **Notification**: Admin announcements with read status
 
-## Technologies Used
-- **FastAPI**: Modern, fast web framework for building APIs
-- **SQLAlchemy**: SQL toolkit and Object-Relational Mapping (ORM)
-- **PostgreSQL**: Advanced open-source relational database
-- **JWT**: JSON Web Tokens for secure authentication
-- **bcrypt**: Password hashing library for security
-- **Pydantic**: Data validation using Python type annotations
+## Security Features
+
+- JWT token authentication with configurable expiration
+- bcrypt password hashing
+- Role-based access control (admin/user)
+- Google OAuth integration
+- Input validation with Pydantic schemas
+- CORS middleware for frontend integration
 
 ---
 
@@ -569,78 +256,113 @@ APP_NAME=LMS Backend API
 
 ### Prerequisites
 - Python 3.8+
-- PostgreSQL database
-- pip package manager
+- PostgreSQL 12+
+- Google OAuth2 credentials (optional)
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies:
+1. **Clone and navigate to backend directory**
+   ```bash
+   cd backend
+   ```
+
+2. **Database Setup (PostgreSQL)**
+   
+   **Install PostgreSQL:**
+   - **Windows**: Download from [postgresql.org](https://www.postgresql.org/download/windows/)
+   - **macOS**: `brew install postgresql`
+   - **Linux**: `sudo apt-get install postgresql postgresql-contrib`
+   
+   **Create Database:**
+   ```bash
+   # Start PostgreSQL service
+   # Windows: Start via Services or pgAdmin
+   # macOS: brew services start postgresql
+   # Linux: sudo systemctl start postgresql
+   
+   # Connect to PostgreSQL
+   psql -U postgres
+   
+   # Create database and user
+   CREATE DATABASE lms_db;
+   CREATE USER lms_user WITH PASSWORD 'your_password';
+   GRANT ALL PRIVILEGES ON DATABASE lms_db TO lms_user;
+   \q
+   ```
+
+3. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+4. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
-3. Set up environment variables (see above)
-4. Run database migrations
-5. Start the development server:
+
+5. **Environment Configuration**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Update `.env` with your configuration:
+   ```env
+   DATABASE_URL=postgresql://lms_user:your_password@localhost/lms_db
+   JWT_SECRET_KEY=your-secret-key-here
+   JWT_ALGORITHM=HS256
+   JWT_EXPIRATION_MINUTES=30
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   SESSION_SECRET_KEY=your-session-secret
+   LOG_RESPONSE_TIME=true
+   ```
+
+6. **Initialize Database Tables**
+   ```bash
+   python -c "from core.database import engine; from models import *; Base.metadata.create_all(bind=engine)"
+   ```
+
+7. **Run the application**
    ```bash
    uvicorn main:app --reload
    ```
+   
+   - API: `http://localhost:8000`
+   - Documentation: `http://localhost:8000/docs`
 
-### Running Tests
+### Database Troubleshooting
 
-This project uses pytest for testing. The test suite includes comprehensive tests for user management, course management, authentication, and authorization.
+**Connection Issues:**
+- Ensure PostgreSQL is running: `sudo systemctl status postgresql` (Linux)
+- Test connection: `psql -U lms_user -d lms_db -h localhost`
+- Verify DATABASE_URL format in .env
 
-#### Prerequisites for Testing
-- All dependencies installed (`pip install -r requirements.txt`)
-- No database setup required (tests use in-memory SQLite)
-
-#### Running All Tests
+**Docker Alternative:**
 ```bash
+docker run --name lms-postgres \
+  -e POSTGRES_DB=lms_db \
+  -e POSTGRES_USER=lms_user \
+  -e POSTGRES_PASSWORD=your_password \
+  -p 5432:5432 \
+  -d postgres:13
+```
+
+## Testing
+
+```bash
+# Run all tests
 pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
 ```
 
-#### Running Tests with Verbose Output
-```bash
-pytest -v
-```
+## API Documentation
 
-#### Running Specific Test Files
-```bash
-# Test user-related functionality
-pytest tests/test_users.py -v
-
-# Test course-related functionality
-pytest tests/test_courses.py -v
-```
-
-#### Running Specific Test Classes
-```bash
-# Test user registration only
-pytest tests/test_users.py::TestUserRegistration -v
-
-# Test course creation only
-pytest tests/test_courses.py::TestCourseCreation -v
-```
-
-#### Test Coverage
-The test suite covers:
-- **User Management**: Registration, login, profile management, admin operations
-- **Authentication**: JWT token validation, OAuth integration
-- **Authorization**: Role-based access control (user vs admin)
-- **Course Management**: CRUD operations, search functionality
-- **API Response Structure**: Consistent response format validation
-- **Error Handling**: Various error scenarios and edge cases
-
-#### Test Database
-- Tests use an isolated in-memory SQLite database
-- Each test gets a fresh database instance
-- No cleanup required after running tests
-- Tests do not affect your development database
-
-### API Documentation
-Once the server is running, visit:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+Interactive documentation is available when the server is running:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
 ---
 
