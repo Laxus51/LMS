@@ -33,8 +33,8 @@ const TutorChat = () => {
       const status = await chatApi.getAccessStatus();
       setAccessStatus(status);
       
-      // Only load conversations if user has access
-      if (status.has_access) {
+      // Load conversations for all users except mentors
+      if (status.role !== 'mentor') {
         await loadConversations();
       }
     } catch (error) {
@@ -162,19 +162,14 @@ const TutorChat = () => {
     return null;
   }
 
-  // No access (unknown role or error)
-  if (!accessStatus || !accessStatus.has_access) {
+  // No access (unknown role or error) - but allow free users to see chat interface
+  if (!accessStatus || (!accessStatus.has_access && accessStatus?.role !== 'free')) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
           <MessageSquare className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h2>
           <p className="text-gray-600 mb-4">{accessStatus?.message || 'You do not have access to the tutor chat.'}</p>
-          {accessStatus?.role === 'free' && (
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-              Upgrade to Premium
-            </button>
-          )}
         </div>
       </div>
     );
@@ -303,14 +298,24 @@ const TutorChat = () => {
 
         {/* Message Input */}
         <div className="bg-white border-t border-gray-200 p-4">
-          {/* Free user status indicator */}
-          {accessStatus?.role === 'free' && accessStatus.remaining_messages >= 0 && (
+          {/* Free user status indicators */}
+          {accessStatus?.role === 'free' && accessStatus.remaining_messages > 0 && (
             <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                {accessStatus.remaining_messages > 0 
-                  ? `${accessStatus.remaining_messages} message${accessStatus.remaining_messages === 1 ? '' : 's'} remaining today`
-                  : 'Daily limit reached. Upgrade to Premium for unlimited access.'
-                }
+                {accessStatus.remaining_messages} message${accessStatus.remaining_messages === 1 ? '' : 's'} remaining today
+              </p>
+            </div>
+          )}
+          {accessStatus?.role === 'free' && !accessStatus.has_access && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800 font-medium">
+                Daily limit reached (3/3 messages used). 
+                <button 
+                  className="text-blue-600 hover:text-blue-800 underline ml-1"
+                  onClick={() => window.location.href = '/pricing'}
+                >
+                  Upgrade to Premium
+                </button> for unlimited access.
               </p>
             </div>
           )}
@@ -325,7 +330,7 @@ const TutorChat = () => {
             />
             <button
               type="submit"
-              disabled={!inputMessage.trim() || isLoading}
+              disabled={!inputMessage.trim() || isLoading || (accessStatus?.role === 'free' && !accessStatus.has_access)}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               <Send className="w-4 h-4" />
