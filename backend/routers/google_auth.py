@@ -90,7 +90,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             # User exists, create JWT token
             token_data = {
                 "sub": existing_user.email,
-                "role": existing_user.role,
+                "role": existing_user.role.value,  # Convert enum to string
                 "id": existing_user.id
             }
             access_token = create_access_token(data=token_data)
@@ -118,7 +118,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             # Create JWT token for new user
             token_data = {
                 "sub": new_user.email,
-                "role": new_user.role,
+                "role": new_user.role.value,  # Convert enum to string
                 "id": new_user.id
             }
             access_token = create_access_token(data=token_data)
@@ -139,6 +139,12 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             status_code=302
         )
     except Exception as e:
+        # Log the actual error for debugging
+        print(f"OAuth callback error: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        
         # Redirect to frontend with error
         return RedirectResponse(
             url=f"http://localhost:5173/auth/google/callback?error=oauth_callback_failed",

@@ -8,8 +8,8 @@ const ModuleCard = ({ title, content_link, id, isCompleted: initialCompleted, on
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Only students can complete modules
-  const canComplete = user?.role === 'user';
+  // Only free and premium users can complete modules
+   const canComplete = user?.role === 'free' || user?.role === 'premium';
 
   const handleMarkComplete = async () => {
     if (isCompleted || isLoading) return;
@@ -202,18 +202,7 @@ const ModuleCard = ({ title, content_link, id, isCompleted: initialCompleted, on
             </label>
           ) : (
             <div className="flex items-center">
-              <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 relative ${
-                isCompleted
-                  ? 'border-green-500 bg-green-500'
-                  : 'border-gray-300 bg-gray-100'
-              }`}>
-                {isCompleted && (
-                   <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                 )}
-              </div>
-              <span className="ml-2 text-xs sm:text-sm font-medium text-gray-500">
+              <span className="text-xs sm:text-sm font-medium text-gray-500">
                 {isCompleted ? 'Completed' : 'View Only'}
               </span>
             </div>

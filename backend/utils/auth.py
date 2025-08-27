@@ -2,7 +2,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from core import config
-from typing import Dict
+from typing import Dict, List
+from models.user import UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
@@ -21,13 +22,40 @@ def decode_token(token: str) -> Dict:
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
+    role_str = payload.get("role", "free")
+    # Convert string role to UserRole enum
+    try:
+        role = UserRole(role_str)
+    except ValueError:
+        role = UserRole.FREE
+    
     return {
         "email": payload.get("sub"),
-        "role": payload.get("role", "user"),
+        "role": role,
         "id": payload.get("id")
     }
 
+def require_roles(allowed_roles: List[UserRole]):
+    def role_checker(user: Dict = Depends(get_current_user)):
+        if user["role"] not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required roles: {[role.value for role in allowed_roles]}"
+            )
+        return user
+    return role_checker
+
 def require_admin(user: Dict = Depends(get_current_user)):
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admins only")
+    if user["role"] != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return user
+
+def require_mentor_or_admin(user: Dict = Depends(get_current_user)):
+    if user["role"] not in [UserRole.MENTOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mentor or Admin access required")
+    return user
+
+def require_premium_or_above(user: Dict = Depends(get_current_user)):
+    if user["role"] not in [UserRole.PREMIUM, UserRole.MENTOR, UserRole.ADMIN]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Premium access required")
     return user

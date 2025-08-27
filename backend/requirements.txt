@@ -23,6 +23,7 @@ Jinja2==3.1.6
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
+openai==1.58.1
 orjson==3.11.1
 passlib==1.7.4
 psycopg2-binary==2.9.10

@@ -22,7 +22,12 @@ def create_user(db: Session, user: UserCreate) -> User:
 
     try:
         hashed_password = get_password_hash(user.password)
-        new_user = User(email=user.email, hashed_password=hashed_password, name=user.name)
+        new_user = User(
+            email=user.email, 
+            hashed_password=hashed_password, 
+            name=user.name,
+            role=user.role  # Use role from schema (defaults to FREE)
+        )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
@@ -107,6 +112,7 @@ def create_user_oauth(db: Session, user: UserCreate) -> User:
             email=user.email, 
             hashed_password=hashed_password, 
             name=user.name,
+            role=user.role,  # Use role from schema (defaults to FREE)
             auth_method="google",
             has_password=False  # OAuth users start without a user-set password
         )

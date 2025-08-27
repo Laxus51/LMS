@@ -20,7 +20,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         # Generate access token for the new user
         token_data = {
             "sub": new_user.email,
-            "role": new_user.role,
+            "role": new_user.role.value,  # Convert enum to string
             "id": new_user.id
         }
         access_token = create_access_token(token_data)
@@ -32,7 +32,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
                     "id": new_user.id,
                     "email": new_user.email,
                     "name": new_user.name,
-                    "role": new_user.role
+                    "role": new_user.role.value
                 }
             },
             message="User registered successfully"
@@ -51,7 +51,7 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
         authenticated_user = authenticate_user(db, user.email, user.password)
         token_data = {
             "sub": authenticated_user.email,
-            "role": authenticated_user.role,
+            "role": authenticated_user.role.value,  # Convert enum to string
             "id": authenticated_user.id
         }
         access_token = create_access_token(token_data)
@@ -63,7 +63,7 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
                     "id": authenticated_user.id,
                     "email": authenticated_user.email,
                     "name": authenticated_user.name,
-                    "role": authenticated_user.role
+                    "role": authenticated_user.role.value
                 }
             },
             message="Login successful"

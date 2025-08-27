@@ -20,6 +20,7 @@ A FastAPI-based backend for a Learning Management System with comprehensive cour
 - **Database**: PostgreSQL with SQLAlchemy 2.0.42
 - **Authentication**: JWT + Google OAuth (Authlib)
 - **Password Hashing**: bcrypt
+
 - **Environment Management**: python-dotenv
 
 ## Project Structure
@@ -38,6 +39,7 @@ backend/
 │   └── notification.py   # Notification model
 ├── schemas/               # Pydantic schemas for request/response
 ├── services/              # Business logic layer
+│   └── openai_service.py # OpenAI service (available for future use)
 ├── routers/               # API route handlers
 │   ├── user.py           # User and admin endpoints
 │   ├── courses.py        # Course management
@@ -46,6 +48,7 @@ backend/
 │   ├── notifications.py  # Notification system
 │   ├── google_auth.py    # Google OAuth integration
 │   ├── dashboard.py      # Dashboard statistics
+
 │   └── health.py         # Health check endpoint
 ├── utils/                 # Utility functions
 │   └── auth.py           # Authentication and authorization
@@ -106,6 +109,8 @@ Authorization: Bearer <your_jwt_token>
 
 ### Dashboard
 - `GET /dashboard/stats` - Get dashboard statistics
+
+
 
 ### Health Check
 - `GET /health` - API health status
@@ -245,6 +250,12 @@ JWT_EXPIRATION_MINUTES=30
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_MODEL=gpt-3.5-turbo
+OPENAI_MAX_TOKENS=1000
+OPENAI_TEMPERATURE=0.7
+
 # Application Settings
 DEBUG=True
 APP_NAME=LMS Backend API
@@ -314,6 +325,10 @@ APP_NAME=LMS Backend API
    JWT_EXPIRATION_MINUTES=30
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
+   OPENAI_API_KEY=your-openai-api-key-here
+   OPENAI_MODEL=gpt-3.5-turbo
+   OPENAI_MAX_TOKENS=1000
+   OPENAI_TEMPERATURE=0.7
    SESSION_SECRET_KEY=your-session-secret
    LOG_RESPONSE_TIME=true
    ```

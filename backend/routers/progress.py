@@ -5,6 +5,7 @@ from utils.auth import get_current_user
 from services.progress_service import mark_module_completed, get_user_progress, unmark_module_completed
 from schemas.progress import ProgressOut
 from core.response import success_response, error_response
+from models.user import UserRole
 from typing import List
 
 router = APIRouter(prefix="/progress", tags=["Progress"])
@@ -17,7 +18,7 @@ def complete_module(
 ):
     """Mark a module as completed (Students only)."""
     try:
-        if user["role"] != "user":
+        if user["role"] not in [UserRole.FREE, UserRole.PREMIUM]:
             return error_response(message="Only students can complete modules", status_code=403)
 
         progress = mark_module_completed(db, user_id=user["id"], module_id=module_id)
@@ -38,7 +39,7 @@ def uncomplete_module(
 ):
     """Unmark a module as completed (Students only)."""
     try:
-        if user["role"] != "user":
+        if user["role"] not in [UserRole.FREE, UserRole.PREMIUM]:
             return error_response(message="Only students can uncomplete modules", status_code=403)
 
         progress = unmark_module_completed(db, user_id=user["id"], module_id=module_id)

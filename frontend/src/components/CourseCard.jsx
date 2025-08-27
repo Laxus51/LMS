@@ -41,8 +41,8 @@ const CourseCard = ({ title, description, instructor, id, progressPercentage = 0
           </span>
         </div>
         
-        {/* Progress Bar - Only for students */}
-        {user?.role === 'user' && (
+        {/* Progress Bar - Only for free and premium users */}
+        {(user?.role === 'free' || user?.role === 'premium') && (
           <div className="mb-3 sm:mb-4 flex-shrink-0">
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs text-gray-500">Progress</span>

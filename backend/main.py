@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from routers import health, user, courses, module, progress, notifications, google_auth, dashboard
+from routers import health, user, courses, module, progress, notifications, google_auth, dashboard, chat
 from core.database import create_tables
 from core.error_handlers import init_error_handlers
 from core.middleware import ResponseTimeMiddleware
@@ -16,7 +16,13 @@ logger.info("Starting FastAPI LMS application")
 
 app = FastAPI()
 
-create_tables()
+# Initialize database tables
+try:
+    create_tables()
+    logger.info("Database tables created successfully")
+except Exception as e:
+    logger.error(f"Failed to create database tables: {e}")
+    # Continue startup even if table creation fails
 
 init_error_handlers(app)
 
@@ -45,4 +51,6 @@ app.include_router(module.router)
 app.include_router(notifications.router)
 app.include_router(google_auth.router)
 app.include_router(dashboard.router)
+app.include_router(chat.router)
+# AI router removed - OpenAI service available for future use
 

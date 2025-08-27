@@ -32,7 +32,7 @@ const Courses = () => {
       setCourses(coursesData);
       
       // Only fetch progress for students, not admins
-      if (user?.role === 'user') {
+      if (user?.role === 'free' || user?.role === 'premium') {
         // Fetch user progress for students
         const progressResponse = await api.get('/progress/user');
         const progressData = progressResponse.data.data || progressResponse.data || [];
@@ -75,7 +75,7 @@ const Courses = () => {
         
         setCoursesWithProgress(coursesWithProgressData);
       } else {
-        // For admins, just show courses without progress data
+        // For admins and mentors, just show courses without progress data
         const coursesWithoutProgress = coursesData.map(course => ({
           ...course,
           progressPercentage: 0,
@@ -127,7 +127,7 @@ const Courses = () => {
       const searchData = response.data.data || response.data || [];
       
       // For search results, we need to calculate progress for students
-      if (user?.role === 'user') {
+        if (user?.role === 'free' || user?.role === 'premium') {
         // Fetch user progress for students
         const progressResponse = await api.get('/progress/user');
         const progressData = progressResponse.data.data || progressResponse.data || [];
@@ -170,7 +170,7 @@ const Courses = () => {
         
         setSearchResults(searchResultsWithProgress);
       } else {
-        // For admins, just show search results without progress data
+          // For admins and mentors, just show search results without progress data
         const searchResultsWithoutProgress = searchData.map(course => ({
           ...course,
           progressPercentage: 0,

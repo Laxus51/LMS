@@ -53,12 +53,21 @@ const GoogleCallback = () => {
           return;
         }
 
-        // Create user object from URL parameters
+        // Decode JWT token to get user role
+        let userRole = 'free'; // Default fallback
+        try {
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          userRole = tokenPayload.role || 'free';
+        } catch (error) {
+          console.warn('Failed to decode token for role, using default:', error);
+        }
+
+        // Create user object from URL parameters and decoded token
         const user = {
           id: parseInt(userId),
           email: email,
           name: name || '',
-          role: 'user' // Default role for OAuth users
+          role: userRole // Use role from JWT token
         };
         
         // Save token and user data using AuthContext

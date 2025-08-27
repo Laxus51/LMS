@@ -9,7 +9,10 @@ import UserProfile from './pages/UserProfile';
 import AdminUsers from './pages/AdminUsers';
 import CourseCreation from './pages/CourseCreation';
 import ModuleCreation from './pages/ModuleCreation';
+import TutorChat from './components/TutorChat';
+
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleProtectedRoute from './components/RoleProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
 
@@ -58,27 +61,36 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
             <Route 
               path="/admin/users" 
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute requiredRole="admin" redirectTo="/dashboard">
                   <AdminUsers />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/courses/create" 
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute requiredRole="admin" redirectTo="/dashboard">
                   <CourseCreation />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               } 
             />
             <Route 
               path="/courses/:courseId/modules/create" 
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute requiredRole="admin" redirectTo="/dashboard">
                   <ModuleCreation />
+                </RoleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/tutor-chat" 
+              element={
+                <ProtectedRoute>
+                  <TutorChat />
                 </ProtectedRoute>
               } 
             />

@@ -33,8 +33,8 @@ const CourseDetails = () => {
         api.get(`/courses/${courseId}/modules`)
       ];
       
-      // Only fetch progress for non-admin users
-      if (user?.role !== 'admin') {
+      // Only fetch progress for free and premium users
+      if (user?.role === 'free' || user?.role === 'premium') {
         requests.push(api.get('/progress/user'));
       }
       
@@ -50,8 +50,8 @@ const CourseDetails = () => {
       setModules(modulesData);
       
       // Initialize completed modules set based on user progress
-      // Only for non-admin users
-      if (user?.role !== 'admin' && progressResponse) {
+      // Only for free and premium users
+      if ((user?.role === 'free' || user?.role === 'premium') && progressResponse) {
         const progressData = progressResponse.data.data || progressResponse.data || [];
         const moduleIds = new Set(modulesData.map(module => module.id));
         const completed = new Set(
@@ -61,7 +61,7 @@ const CourseDetails = () => {
         );
         setCompletedModules(completed);
       } else {
-        // Admin users should not see any modules as completed
+        // admin and mentor users should not see any modules as completed
         setCompletedModules(new Set());
       }
       
@@ -191,7 +191,7 @@ const CourseDetails = () => {
             </div>
             
             {/* Progress Bar - Only for students */}
-            {user?.role === 'user' ? (
+            {(user?.role === 'free' || user?.role === 'premium') ? (
               <div className="mb-4 sm:mb-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 space-y-1 sm:space-y-0">
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900">Course Progress</h3>
@@ -216,8 +216,12 @@ const CourseDetails = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <h3 className="text-xs sm:text-sm font-medium text-blue-800">Administrator View</h3>
-                    <p className="text-xs sm:text-sm text-blue-700 leading-relaxed">You are viewing this course as an administrator. Progress tracking is available for students only.</p>
+                    <h3 className="text-xs sm:text-sm font-medium text-blue-800">
+                      {user?.role === 'admin' ? 'Administrator View' : user?.role === 'mentor' ? 'Mentor View' : 'Restricted Access'}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-blue-700 leading-relaxed">
+                      You are viewing this course as {user?.role === 'admin' ? 'an administrator' : user?.role === 'mentor' ? 'a mentor' : 'a restricted user'}. Progress tracking is available for students only.
+                    </p>
                   </div>
                 </div>
               </div>

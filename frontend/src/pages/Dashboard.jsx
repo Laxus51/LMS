@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, USER_ROLES } from '../contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import api from '../services/api';
@@ -12,7 +12,8 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user?.role === 'user') {
+    // Fetch stats for all authenticated users
+    if (user) {
       fetchDashboardStats();
     } else {
       setLoading(false);
@@ -75,7 +76,9 @@ const Dashboard = () => {
           </div>
 
           {/* Stats Cards for Students */}
-          {user?.role === 'user' && (
+          
+          {/* Dashboard Stats */}
+          {(user?.role === USER_ROLES.FREE || user?.role === USER_ROLES.PREMIUM || user?.role === USER_ROLES.MENTOR || user?.role === USER_ROLES.ADMIN) && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {loading ? (
                 // Loading skeleton
