@@ -168,17 +168,102 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
               {/* Hide AI Tutor for mentor users */}
               {userRole !== USER_ROLES.MENTOR && (
                 <button
-                  onClick={() => navigate('/tutor-chat')}
+                onClick={() => navigate('/tutor-chat')}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  isActive('/tutor-chat')
+                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span className="text-sm font-medium">AI Tutor</span>
+              </button>
+              )}
+              
+              <button
+                onClick={() => navigate('/study-plan')}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  isActive('/study-plan')
+                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span className="text-sm font-medium">Study Plan</span>
+              </button>
+              
+              {/* Hide Quiz for mentor users */}
+              {userRole !== USER_ROLES.MENTOR && (
+                <button
+                  onClick={() => navigate('/quiz/create')}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                    isActive('/tutor-chat')
+                    isActive('/quiz')
                       ? 'bg-indigo-100 text-indigo-700 font-medium'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="text-sm font-medium">AI Tutor</span>
+                  <span className="text-sm font-medium">Quiz</span>
+                </button>
+              )}
+              
+              {/* Mock Exam - Premium Only */}
+              {canAccessPremium() && (
+                <button
+                  onClick={() => navigate('/mock-exam/create')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/mock-exam')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Crown className="w-5 h-5" />
+                  <span className="text-sm font-medium">Mock Exam</span>
+                </button>
+              )}
+
+              {/* Mentor Sessions - For mentors */}
+              {userRole === USER_ROLES.MENTOR && (
+                <button
+                  onClick={() => navigate('/mentor/dashboard')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/mentor')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">Mentor Dashboard</span>
+                </button>
+              )}
+
+              {/* Mentor Booking - For students */}
+              {userRole !== USER_ROLES.MENTOR && (
+                <button
+                  onClick={() => navigate('/mentor-booking')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/mentor-booking') || isActive('/mentor-sessions')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {canAccessPremium() ? 'Find Mentors' : 'Browse Mentors'}
+                  </span>
+                  {!canAccessPremium() && (
+                    <Crown className="w-3 h-3 text-yellow-500" />
+                  )}
                 </button>
               )}
 
@@ -344,17 +429,100 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
               {/* Hide AI Tutor for mentor users */}
               {userRole !== USER_ROLES.MENTOR && (
                 <button
-                  onClick={() => handleNavigation('/tutor-chat')}
+                onClick={() => handleNavigation('/tutor-chat')}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                  isActive('/tutor-chat')
+                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>AI Tutor</span>
+              </button>
+              )}
+              
+              <button
+                onClick={() => handleNavigation('/study-plan')}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                  isActive('/study-plan')
+                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span>Study Plan</span>
+              </button>
+              
+              {/* Hide Quiz for mentor users */}
+              {userRole !== USER_ROLES.MENTOR && (
+                <button
+                  onClick={() => handleNavigation('/quiz/create')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                    isActive('/tutor-chat')
+                    isActive('/quiz')
                       ? 'bg-indigo-100 text-indigo-700 font-medium'
                       : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>AI Tutor</span>
+                  <span>Quiz</span>
+                </button>
+              )}
+              
+              {/* Mock Exam - Premium Only */}
+              {canAccessPremium() && (
+                <button
+                  onClick={() => handleNavigation('/mock-exam/create')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                    isActive('/mock-exam')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Crown className="w-5 h-5" />
+                  <span>Mock Exam</span>
+                </button>
+              )}
+
+              {/* Mentor Sessions - For mentors */}
+              {userRole === USER_ROLES.MENTOR && (
+                <button
+                  onClick={() => handleNavigation('/mentor/dashboard')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                    isActive('/mentor')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                  <span>Mentor Dashboard</span>
+                </button>
+              )}
+
+              {/* Mentor Booking - For students */}
+              {userRole !== USER_ROLES.MENTOR && (
+                <button
+                  onClick={() => handleNavigation('/mentor-booking')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                    isActive('/mentor-booking') || isActive('/mentor-sessions')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                  <span>{canAccessPremium() ? 'Find Mentors' : 'Browse Mentors'}</span>
+                  {!canAccessPremium() && (
+                    <Crown className="w-3 h-3 text-yellow-500 ml-auto" />
+                  )}
                 </button>
               )}
 

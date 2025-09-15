@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from routers import health, user, courses, module, progress, notifications, google_auth, dashboard, chat
+from routers import health, user, courses, module, progress, notifications, google_auth, dashboard, chat, study_plan, study_plan_progress, quiz, mock_exam, payment, mentor_sessions
 from core.database import create_tables
 from core.error_handlers import init_error_handlers
 from core.middleware import ResponseTimeMiddleware
@@ -52,5 +52,15 @@ app.include_router(notifications.router)
 app.include_router(google_auth.router)
 app.include_router(dashboard.router)
 app.include_router(chat.router)
+app.include_router(study_plan.router)
+app.include_router(study_plan_progress.router)
+app.include_router(quiz.router)
+app.include_router(mock_exam.router)
+app.include_router(payment.router)
+app.include_router(mentor_sessions.router)
 # AI router removed - OpenAI service available for future use
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 

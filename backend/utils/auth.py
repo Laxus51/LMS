@@ -52,7 +52,7 @@ def require_admin(user: Dict = Depends(get_current_user)):
 
 def require_mentor_or_admin(user: Dict = Depends(get_current_user)):
     if user["role"] not in [UserRole.MENTOR, UserRole.ADMIN]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mentor or Admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mentor or admin access required")
     return user
 
 def require_premium_or_above(user: Dict = Depends(get_current_user)):

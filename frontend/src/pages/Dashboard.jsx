@@ -155,6 +155,48 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* Upgrade to Premium Section for Free Users */}
+          {user?.role === USER_ROLES.FREE && (
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-sm p-6 mb-8 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold mb-2">Unlock Premium Features</h2>
+                  <p className="text-purple-100 mb-4">
+                    Get unlimited access to quizzes, AI tutoring, and advanced study plans.
+                  </p>
+                  <ul className="text-sm text-purple-100 space-y-1 mb-4">
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Unlimited quiz generation
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Advanced AI tutoring
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Priority support
+                    </li>
+                  </ul>
+                </div>
+                <div className="ml-6">
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="bg-white text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-lg font-semibold transition duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Continue Learning Section for Students */}
           {user?.role === 'user' && !loading && !error && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">

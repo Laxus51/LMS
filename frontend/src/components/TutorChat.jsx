@@ -176,7 +176,7 @@ const TutorChat = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-full bg-gray-50">
       {/* Admin indicator */}
       {accessStatus?.role === 'admin' && (
         <div className="absolute top-4 right-4 z-10 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -302,7 +302,7 @@ const TutorChat = () => {
           {accessStatus?.role === 'free' && accessStatus.remaining_messages > 0 && (
             <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                {accessStatus.remaining_messages} message${accessStatus.remaining_messages === 1 ? '' : 's'} remaining today
+                {accessStatus.remaining_messages} message{accessStatus.remaining_messages === 1 ? '' : 's'} remaining today
               </p>
             </div>
           )}

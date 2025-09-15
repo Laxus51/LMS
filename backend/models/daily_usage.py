@@ -10,6 +10,7 @@ class DailyUsage(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     date = Column(Date, default=date.today, nullable=False)
     chat_messages_count = Column(Integer, default=0, nullable=False)
+    quiz_count = Column(Integer, default=0, nullable=False)
     
     # Relationships
     user = relationship("User")

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { userApi } from '../services/userApi';
 
 const AuthContext = createContext();
 
@@ -42,6 +43,29 @@ export const canAccessAdmin = (userRole) => {
 
 export const canAccessMentor = (userRole) => {
   return hasRole(userRole, USER_ROLES.MENTOR);
+};
+
+// Subscription utility functions
+export const hasActiveSubscription = (user) => {
+  if (!user) return false;
+  
+  // Check if user has premium role (legacy check)
+  if (user.role === USER_ROLES.PREMIUM || user.role === USER_ROLES.ADMIN) {
+    return true;
+  }
+  
+  // Check subscription status and end date
+  if (user.subscription_status === 'active' && user.subscription_end_date) {
+    const endDate = new Date(user.subscription_end_date);
+    const now = new Date();
+    return endDate > now;
+  }
+  
+  return false;
+};
+
+export const canAccessPremiumFeatures = (user) => {
+  return hasActiveSubscription(user) || user?.role === USER_ROLES.ADMIN;
 };
 
 export const AuthProvider = ({ children }) => {
@@ -93,12 +117,35 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    if (!authToken) return;
+    
+    try {
+      const response = await userApi.getProfile();
+      const userData = response.data;
+      
+      // Update localStorage and state
+      localStorage.setItem('userData', JSON.stringify(userData));
+      setUser(userData);
+      
+      return userData;
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      // If token is invalid, logout
+      if (error.response?.status === 401) {
+        logout();
+      }
+      throw error;
+    }
+  }, [authToken, logout]);
+
   const value = useMemo(() => ({
     authToken,
     user,
     isLoading,
     login,
     logout,
+    refreshUser,
     isAuthenticated: !!authToken,
     userRole: user?.role || USER_ROLES.FREE,
     hasRole: (requiredRole) => hasRole(user?.role, requiredRole),
@@ -108,8 +155,14 @@ export const AuthProvider = ({ children }) => {
     isFreeUser: user?.role === USER_ROLES.FREE,
     isPremiumUser: user?.role === USER_ROLES.PREMIUM,
     isMentor: user?.role === USER_ROLES.MENTOR,
-    isAdmin: user?.role === USER_ROLES.ADMIN
-  }), [authToken, user, isLoading, login, logout]);
+    isAdmin: user?.role === USER_ROLES.ADMIN,
+    // Subscription-related functions
+    hasActiveSubscription: () => hasActiveSubscription(user),
+    canAccessPremiumFeatures: () => canAccessPremiumFeatures(user),
+    subscriptionStatus: user?.subscription_status,
+    subscriptionEndDate: user?.subscription_end_date,
+    subscriptionId: user?.subscription_id
+  }), [authToken, user, isLoading, login, logout, refreshUser]);
 
   return (
     <AuthContext.Provider value={value}>
