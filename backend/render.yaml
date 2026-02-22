@@ -1,0 +1,44 @@
+# render.yaml — Render Blueprint (optional, for one-click deploy)
+services:
+  - type: web
+    name: lms-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Set manually in dashboard
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRATION_MINUTES
+        value: "30"
+      - key: SESSION_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false  # Set after frontend is deployed
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_MAX_TOKENS
+        value: "8000"
+      - key: OPENAI_TEMPERATURE
+        value: "0.7"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.0"

@@ -69,7 +69,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         if not user_info:
             # Redirect to frontend with error
             return RedirectResponse(
-                url="http://localhost:5173/auth/google/callback?error=failed_to_get_user_info",
+                url=f"{config.FRONTEND_URL}/auth/google/callback?error=failed_to_get_user_info",
                 status_code=302
             )
         
@@ -79,7 +79,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         if not email:
             # Redirect to frontend with error
             return RedirectResponse(
-                url="http://localhost:5173/auth/google/callback?error=email_not_provided",
+                url=f"{config.FRONTEND_URL}/auth/google/callback?error=email_not_provided",
                 status_code=302
             )
         
@@ -96,7 +96,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             access_token = create_access_token(data=token_data)
             user_out = UserOut.model_validate(existing_user)
             
-            redirect_url = f"http://localhost:5173/auth/google/callback?token={access_token}&email={email}&name={existing_user.name or ''}&user_id={existing_user.id}"
+            redirect_url = f"{config.FRONTEND_URL}/auth/google/callback?token={access_token}&email={email}&name={existing_user.name or ''}&user_id={existing_user.id}"
             
             # Redirect to frontend with token and user info
             return RedirectResponse(
@@ -124,7 +124,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             access_token = create_access_token(data=token_data)
             user_out = UserOut.model_validate(new_user)
             
-            redirect_url = f"http://localhost:5173/auth/google/callback?token={access_token}&email={email}&name={new_user.name or ''}&user_id={new_user.id}"
+            redirect_url = f"{config.FRONTEND_URL}/auth/google/callback?token={access_token}&email={email}&name={new_user.name or ''}&user_id={new_user.id}"
             
             # Redirect to frontend with token and user info
             return RedirectResponse(
@@ -135,7 +135,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     except HTTPException as he:
         # Redirect to frontend with error
         return RedirectResponse(
-            url=f"http://localhost:5173/auth/google/callback?error={he.detail}",
+            url=f"{config.FRONTEND_URL}/auth/google/callback?error={he.detail}",
             status_code=302
         )
     except Exception as e:
@@ -147,7 +147,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         
         # Redirect to frontend with error
         return RedirectResponse(
-            url=f"http://localhost:5173/auth/google/callback?error=oauth_callback_failed",
+            url=f"{config.FRONTEND_URL}/auth/google/callback?error=oauth_callback_failed",
             status_code=302
         )
 

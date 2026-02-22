@@ -6,6 +6,7 @@ import json
 import logging
 
 from core.database import get_db
+from core import config
 from utils.auth import get_current_user, require_roles
 from models.user import UserRole
 from models.mentor_session import SessionStatus
@@ -201,7 +202,7 @@ async def book_session(
         session = mentor_service.book_session(db, current_user["id"], booking_data)
         
         # Create payment session
-        current_url = "http://localhost:5173"  # You may want to make this configurable
+        current_url = config.FRONTEND_URL
         success_url = f"{current_url}/mentor-sessions/payment-success?session_id={session.id}"
         cancel_url = f"{current_url}/mentor-sessions/payment-cancel?session_id={session.id}"
         
