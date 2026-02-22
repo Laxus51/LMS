@@ -27,7 +27,7 @@ except Exception as e:
 init_error_handlers(app)
 
 # CORS middleware to allow frontend communication
-allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+allowed_origins = ["http://localhost:5173", "https://lms-eta-seven.vercel.app"]
 if config.FRONTEND_URL and config.FRONTEND_URL not in allowed_origins:
     allowed_origins.append(config.FRONTEND_URL)
 
