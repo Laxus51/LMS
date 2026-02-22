@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { quizApi } from '../services/quizApi';
 
 const QuizResult = () => {
@@ -12,7 +12,7 @@ const QuizResult = () => {
   const [quiz, setQuiz] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Get result from navigation state if available
   const resultFromState = location.state?.result;
 
@@ -26,13 +26,13 @@ const QuizResult = () => {
     try {
       setIsLoading(true);
       const quizData = await quizApi.getQuiz(quizId);
-      
+
       // Check if quiz is not completed
       if (!quizData.completed_at) {
         navigate(`/quiz/attempt/${quizId}`);
         return;
       }
-      
+
       setQuiz(quizData);
     } catch (err) {
       setError('Failed to load quiz results: ' + err.message);
@@ -69,7 +69,7 @@ const QuizResult = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Quiz Results" />
+        <TopBar title="Quiz Results" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -82,7 +82,7 @@ const QuizResult = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Quiz Results" />
+        <TopBar title="Quiz Results" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -105,7 +105,7 @@ const QuizResult = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Quiz Results" />
+      <TopBar title="Quiz Results" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Congratulations Banner */}
         <div className={`${performance.bgColor} border border-opacity-20 rounded-lg p-6 mb-8 text-center`}>
@@ -126,7 +126,7 @@ const QuizResult = () => {
             <h3 className="text-xl font-bold text-gray-900 mb-6">
               {quiz?.certification} Quiz Results
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="text-center">
                 <div className={`text-4xl font-bold ${getScoreColor(score)} mb-2`}>
@@ -134,14 +134,14 @@ const QuizResult = () => {
                 </div>
                 <div className="text-sm text-gray-500">Final Score</div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-4xl font-bold text-green-600 mb-2">
                   {getCorrectAnswersCount()}
                 </div>
                 <div className="text-sm text-gray-500">Correct Answers</div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-4xl font-bold text-blue-600 mb-2">
                   {getTotalQuestions()}
@@ -149,7 +149,7 @@ const QuizResult = () => {
                 <div className="text-sm text-gray-500">Total Questions</div>
               </div>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                 <div>
@@ -162,8 +162,8 @@ const QuizResult = () => {
                   <span className="font-medium">Completed:</span> {quiz?.completed_at ? new Date(quiz.completed_at).toLocaleString() : 'Just now'}
                 </div>
                 <div>
-                  <span className="font-medium">Time Taken:</span> {quiz?.created_at && quiz?.completed_at ? 
-                    Math.round((new Date(quiz.completed_at) - new Date(quiz.created_at)) / 60000) + ' minutes' : 
+                  <span className="font-medium">Time Taken:</span> {quiz?.created_at && quiz?.completed_at ?
+                    Math.round((new Date(quiz.completed_at) - new Date(quiz.created_at)) / 60000) + ' minutes' :
                     'N/A'
                   }
                 </div>
@@ -175,23 +175,22 @@ const QuizResult = () => {
         {/* Performance Analysis */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h4 className="text-lg font-bold text-gray-900 mb-4">Performance Analysis</h4>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Accuracy Rate</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-500 ${
-                      score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
+                  <div
+                    className={`h-2 rounded-full transition-all duration-500 ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
                     style={{ width: `${score}%` }}
                   ></div>
                 </div>
                 <span className={`font-medium ${getScoreColor(score)}`}>{score}%</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Correct:</span>
@@ -213,14 +212,14 @@ const QuizResult = () => {
           >
             Review Answers
           </button>
-          
+
           <button
             onClick={() => navigate('/quiz/create')}
             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             Take New Quiz
           </button>
-          
+
           <button
             onClick={() => navigate('/quiz/history')}
             className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"

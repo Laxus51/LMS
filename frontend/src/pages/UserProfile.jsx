@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import api from '../services/api';
+import paymentApi from '../services/paymentApi';
+import { User, Mail, Shield, Calendar, AlertTriangle, Crown } from 'lucide-react';
 
 const UserProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -14,18 +16,25 @@ const UserProfile = () => {
   const [updateError, setUpdateError] = useState('');
   const navigate = useNavigate();
 
+  // Subscription state
+  const [subStatus, setSubStatus] = useState(null);
+  const [subLoading, setSubLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState('');
+  const [cancelError, setCancelError] = useState('');
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     password: '',
     confirmPassword: ''
   });
-
-  // Validation state
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     fetchProfile();
+    fetchSubscriptionStatus();
   }, []);
 
   const fetchProfile = async () => {
@@ -33,145 +42,97 @@ const UserProfile = () => {
       setLoading(true);
       setError(null);
       const response = await api.get('/users/profile');
-      
       if (response.data.success) {
         setProfile(response.data.data);
-        setFormData({
-          name: response.data.data.name || '',
-          password: '',
-          confirmPassword: ''
-        });
+        setFormData({ name: response.data.data.name || '', password: '', confirmPassword: '' });
       } else {
         setError(response.data.message || 'Failed to fetch profile');
       }
     } catch (err) {
-      console.error('Error fetching profile:', err);
-      
-      // Provide specific error messages based on status code
-      if (err.response?.status === 401) {
-        setError('Your session has expired. Please sign in again to view your profile.');
-      } else if (err.response?.status === 403) {
-        setError('You don\'t have permission to access this profile.');
-      } else if (err.response?.status >= 500) {
-        setError('Our servers are experiencing issues. Please try again in a few minutes.');
-      } else if (!navigator.onLine) {
-        setError('No internet connection. Please check your network and try again.');
-      } else {
-        setError(
-          err.response?.data?.message || 
-          err.message || 
-          'Unable to load your profile right now. Please try again later.'
-        );
-      }
+      if (err.response?.status === 401) setError('Session expired. Please sign in again.');
+      else if (err.response?.status >= 500) setError('Server error. Try again later.');
+      else if (!navigator.onLine) setError('No internet connection.');
+      else setError(err.response?.data?.message || 'Unable to load profile.');
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchSubscriptionStatus = async () => {
+    try {
+      setSubLoading(true);
+      const data = await paymentApi.getSubscriptionStatus();
+      setSubStatus(data);
+    } catch (err) {
+      console.error('Error fetching subscription status:', err);
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    try {
+      setCancelLoading(true);
+      setCancelError('');
+      setCancelMessage('');
+      const response = await paymentApi.cancelSubscription();
+      if (response.success) {
+        setCancelMessage(response.message || 'Subscription will be canceled at the end of the current billing period.');
+        setShowCancelConfirm(false);
+        await fetchSubscriptionStatus(); // Refresh status
+      } else {
+        setCancelError('Failed to cancel subscription. Please try again.');
+      }
+    } catch (err) {
+      setCancelError(err.response?.data?.detail || 'Failed to cancel subscription. Please try again.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
-
-    // Name validation
-    if (!formData.name.trim()) {
-      errors.name = 'Name is required';
-    } else if (formData.name.trim().length < 1) {
-      errors.name = 'Name must be at least 1 character long';
-    }
-
-    // Password validation (only if password is provided)
+    if (!formData.name.trim()) errors.name = 'Name is required';
     if (formData.password) {
-      if (formData.password.length < 6) {
-        errors.password = 'Password must be at least 6 characters long';
-      }
-      if (formData.password !== formData.confirmPassword) {
-        errors.confirmPassword = 'Passwords do not match';
-      }
+      if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
+      if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
     }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear validation error for this field
-    if (validationErrors[name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (validationErrors[name]) setValidationErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       setUpdateLoading(true);
       setUpdateError('');
       setSuccessMessage('');
 
-      // Prepare update data
-      const updateData = {
-        name: formData.name.trim()
-      };
-
-      // Only include password if it's provided
-      if (formData.password) {
-        updateData.password = formData.password;
-      }
+      const updateData = { name: formData.name.trim() };
+      if (formData.password) updateData.password = formData.password;
 
       const response = await api.put('/users/profile', updateData);
-      
       if (response.data.success) {
         setProfile(response.data.data);
         setSuccessMessage('Profile updated successfully!');
         setIsEditing(false);
-        
-        // Clear password fields
-        setFormData(prev => ({
-          ...prev,
-          password: '',
-          confirmPassword: ''
-        }));
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage('');
-        }, 3000);
+        setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+        setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setUpdateError(response.data.message || 'Failed to update profile');
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
-      
-      // Provide specific error messages based on status code
-      if (err.response?.status === 401) {
-        setUpdateError('Your session has expired. Please sign in again to update your profile.');
-      } else if (err.response?.status === 400) {
-        setUpdateError('Please check your information and try again. Make sure all fields are filled correctly.');
-      } else if (err.response?.status === 409) {
-        setUpdateError('This email is already in use. Please choose a different email address.');
-      } else if (err.response?.status >= 500) {
-        setUpdateError('Our servers are experiencing issues. Please try again in a few minutes.');
-      } else if (!navigator.onLine) {
-        setUpdateError('No internet connection. Please check your network and try again.');
-      } else {
-        setUpdateError(
-          err.response?.data?.message || 
-          err.message || 
-          'Unable to update your profile right now. Please try again later.'
-        );
-      }
+      if (err.response?.status === 401) setUpdateError('Session expired. Please sign in again.');
+      else if (err.response?.status === 400) setUpdateError('Please check your information and try again.');
+      else setUpdateError(err.response?.data?.message || 'Unable to update profile.');
     } finally {
       setUpdateLoading(false);
     }
@@ -179,272 +140,315 @@ const UserProfile = () => {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setFormData({
-      name: profile?.name || '',
-      password: '',
-      confirmPassword: ''
-    });
+    setFormData({ name: profile?.name || '', password: '', confirmPassword: '' });
     setValidationErrors({});
     setUpdateError('');
   };
 
-  const handleRetry = () => {
-    fetchProfile();
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
   };
 
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading profile...</p>
+      <>
+        <TopBar title="Profile" />
+        <div className="app-content flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#2563EB] border-t-transparent mx-auto mb-3" />
+            <p className="text-sm text-[#6B7280]">Loading profile...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Error</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="space-y-3">
-            <button
-              onClick={handleRetry}
-              className="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              Try Again
-            </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            >
-              Back to Dashboard
-            </button>
+      <>
+        <TopBar title="Profile" />
+        <div className="app-content flex items-center justify-center min-h-[400px]">
+          <div className="card max-w-sm text-center">
+            <AlertTriangle className="w-10 h-10 text-[#DC2626] mx-auto mb-3" />
+            <h2 className="text-sm font-semibold text-[#111827] mb-1">Profile Error</h2>
+            <p className="text-xs text-[#6B7280] mb-4">{error}</p>
+            <div className="flex gap-2 justify-center">
+              <button onClick={fetchProfile} className="btn-primary text-sm">Try Again</button>
+              <button onClick={() => navigate('/dashboard')} className="btn-secondary text-sm">Dashboard</button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
+  const isPremium = profile?.role === 'premium';
+  const isSubActive = subStatus?.is_active;
+  const willCancel = subStatus?.cancel_at_period_end;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50">
-      <Header title="User Profile" showBackButton={true} backTo="/dashboard" />
-      <div className="container mx-auto px-4 py-8">
+    <>
+      <TopBar title="Profile" />
+      <div className="app-content">
+        <div className="max-w-2xl mx-auto">
 
-        {/* Success Message */}
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-green-700 font-medium">{successMessage}</span>
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-4 px-3 py-2 bg-[#F0FDF4] border border-[#16A34A]/20 rounded-md">
+              <p className="text-xs text-[#16A34A] font-medium">{successMessage}</p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Profile Header */}
-        <div className="bg-gradient-to-r from-indigo-500 to-blue-600 px-6 py-8 rounded-lg mb-6">
-          <div className="flex items-center">
-            <div className="w-20 h-20 bg-indigo-600 bg-opacity-30 rounded-full flex items-center justify-center mr-6">
-              <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1">{profile?.name || 'User'}</h2>
-              <p className="text-indigo-100">{profile?.email}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Content */}
-        <div>
-            {!isEditing ? (
-              // View Mode
+          {/* Profile Info Card */}
+          <div className="card mb-4">
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#E5E7EB]">
+              <div className="w-12 h-12 bg-[#EFF6FF] rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-[#2563EB]" />
+              </div>
               <div>
-                <div className="mb-6">
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <p className="text-lg text-gray-900">{profile?.name || 'Not provided'}</p>
+                <h2 className="text-base font-semibold text-[#111827]">{profile?.name || 'User'}</h2>
+                <p className="text-xs text-[#6B7280]">{profile?.email}</p>
+              </div>
+              <div className="ml-auto">
+                <span className={`badge ${isPremium ? 'badge-info' : 'badge-neutral'}`}>
+                  {isPremium ? 'Premium' : profile?.role?.charAt(0).toUpperCase() + profile?.role?.slice(1) || 'Free'}
+                </span>
+              </div>
+            </div>
+
+            {!isEditing ? (
+              <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Full Name</label>
+                    <p className="text-sm text-[#111827] mt-0.5">{profile?.name || 'Not provided'}</p>
                   </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <p className="text-lg text-gray-900">{profile?.email}</p>
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Email</label>
+                    <p className="text-sm text-[#111827] mt-0.5">{profile?.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Auth Method</label>
+                    <p className="text-sm text-[#111827] mt-0.5 capitalize">{profile?.auth_method || 'Email'}</p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Role</label>
+                    <p className="text-sm text-[#111827] mt-0.5 capitalize">{profile?.role || 'Free'}</p>
                   </div>
                 </div>
-                
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
+                  <button onClick={() => setIsEditing(true)} className="btn-primary text-sm">
                     Edit Profile
                   </button>
                 </div>
               </div>
             ) : (
-              // Edit Mode
               <form onSubmit={handleUpdateProfile}>
-                {/* Update Error */}
                 {updateError && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-red-700 font-medium">{updateError}</span>
-                    </div>
+                  <div className="mb-4 px-3 py-2 bg-[#FEF2F2] border border-[#DC2626]/20 rounded-md">
+                    <p className="text-xs text-[#DC2626]">{updateError}</p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  {/* Name Field */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 ${
-                        validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your full name"
-                    />
-                    {validationErrors.name && (
-                      <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
-                    )}
-                  </div>
-
-                  {/* Password Field */}
+                <div className="space-y-4 mb-4">
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                      {profile?.auth_method === 'google' && !profile?.has_password 
-                        ? 'Set Password (optional)' 
-                        : 'New Password (optional)'
-                      }
-                    </label>
+                    <label htmlFor="name" className="block text-xs font-medium text-[#6B7280] mb-1">Full Name *</label>
                     <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 ${
-                        validationErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      }`}
-                      placeholder={profile?.auth_method === 'google' && !profile?.has_password 
-                        ? 'Set your password' 
-                        : 'Enter new password'
-                      }
+                      type="text" id="name" name="name"
+                      value={formData.name} onChange={handleInputChange}
+                      className={`input ${validationErrors.name ? 'border-[#DC2626]' : ''}`}
+                      placeholder="Enter your name"
                     />
-                    {validationErrors.password && (
-                      <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
-                    )}
+                    {validationErrors.name && <p className="mt-1 text-xs text-[#DC2626]">{validationErrors.name}</p>}
                   </div>
 
-                  {/* Confirm Password Field */}
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      {profile?.auth_method === 'google' && !profile?.has_password 
-                        ? 'Confirm Password' 
-                        : 'Confirm New Password'
-                      }
-                    </label>
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 ${
-                        validationErrors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      }`}
-                      placeholder={profile?.auth_method === 'google' && !profile?.has_password 
-                        ? 'Confirm your password' 
-                        : 'Confirm new password'
-                      }
-                      disabled={!formData.password}
-                    />
-                    {validationErrors.confirmPassword && (
-                      <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Password Info */}
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 text-blue-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-blue-700 text-sm font-medium mb-1">
-                        {profile?.auth_method === 'google' && !profile?.has_password 
-                          ? 'Set Password Information:' 
-                          : 'Password Requirements:'
-                        }
-                      </p>
-                      <ul className="text-blue-600 text-sm space-y-1">
-                        <li>• At least 6 characters long</li>
-                        {profile?.auth_method === 'google' && !profile?.has_password ? (
-                          <>
-                            <li>• Setting a password allows you to login with email/password</li>
-                            <li>• You can still continue using Google OAuth</li>
-                          </>
-                        ) : (
-                          <li>• Leave blank to keep current password</li>
-                        )}
-                        <li>• Both password fields must match</li>
-                      </ul>
+                      <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1">
+                        {profile?.auth_method === 'google' && !profile?.has_password ? 'Set Password' : 'New Password'} (optional)
+                      </label>
+                      <input
+                        type="password" id="password" name="password"
+                        value={formData.password} onChange={handleInputChange}
+                        className={`input ${validationErrors.password ? 'border-[#DC2626]' : ''}`}
+                        placeholder="Enter password"
+                      />
+                      {validationErrors.password && <p className="mt-1 text-xs text-[#DC2626]">{validationErrors.password}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="confirmPassword" className="block text-xs font-medium text-[#6B7280] mb-1">Confirm Password</label>
+                      <input
+                        type="password" id="confirmPassword" name="confirmPassword"
+                        value={formData.confirmPassword} onChange={handleInputChange}
+                        className={`input ${validationErrors.confirmPassword ? 'border-[#DC2626]' : ''}`}
+                        placeholder="Confirm password"
+                        disabled={!formData.password}
+                      />
+                      {validationErrors.confirmPassword && <p className="mt-1 text-xs text-[#DC2626]">{validationErrors.confirmPassword}</p>}
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-4">
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={updateLoading}
-                    className={`px-6 py-3 font-semibold rounded-lg transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                      updateLoading
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white hover:scale-105'
-                    }`}
-                  >
-                    {updateLoading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Updating...
-                      </div>
-                    ) : (
-                      'Save Changes'
-                    )}
+                <div className="flex justify-end gap-2">
+                  <button type="button" onClick={handleCancelEdit} className="btn-secondary text-sm">Cancel</button>
+                  <button type="submit" disabled={updateLoading} className="btn-primary text-sm">
+                    {updateLoading ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>
             )}
+          </div>
+
+          {/* Subscription Management Card */}
+          <div className="card mb-4">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E5E7EB]">
+              <Crown className="w-4 h-4 text-[#D97706]" />
+              <h3 className="text-sm font-semibold text-[#111827]">Subscription</h3>
+            </div>
+
+            {subLoading ? (
+              <div className="flex items-center gap-2 py-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#2563EB] border-t-transparent" />
+                <span className="text-xs text-[#6B7280]">Loading subscription info...</span>
+              </div>
+            ) : !isPremium && !isSubActive && !subStatus?.subscription_id ? (
+              /* Free user — no subscription */
+              <div>
+                <div className="flex items-center gap-3 py-3">
+                  <div className="w-9 h-9 bg-[#F9FAFB] rounded-md flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-[#9CA3AF]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[#111827]">Free Plan</p>
+                    <p className="text-xs text-[#6B7280]">You're on the free plan with limited features.</p>
+                  </div>
+                </div>
+                <button onClick={() => navigate('/pricing')} className="btn-primary text-sm mt-2">
+                  Upgrade to Premium
+                </button>
+              </div>
+            ) : isPremium && !subStatus?.subscription_id ? (
+              /* Premium user without Stripe subscription (manually assigned) */
+              <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Status</label>
+                    <div className="mt-1">
+                      <span className="badge badge-success">Active</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Plan</label>
+                    <p className="text-sm text-[#111827] mt-0.5">Premium</p>
+                  </div>
+                </div>
+                <div className="px-3 py-2 bg-[#EFF6FF] border border-[#2563EB]/10 rounded-md">
+                  <p className="text-xs text-[#2563EB]">Your premium access is managed by an administrator.</p>
+                </div>
+              </div>
+            ) : (
+              /* Has subscription */
+              <div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Status</label>
+                    <div className="mt-1">
+                      {willCancel ? (
+                        <span className="badge badge-warning">Canceling</span>
+                      ) : isSubActive ? (
+                        <span className="badge badge-success">Active</span>
+                      ) : (
+                        <span className="badge badge-error">{subStatus?.status || 'Inactive'}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">Plan</label>
+                    <p className="text-sm text-[#111827] mt-0.5">Premium — $9.99/mo</p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider">
+                      {willCancel ? 'Access Until' : 'Next Billing'}
+                    </label>
+                    <p className="text-sm text-[#111827] mt-0.5">
+                      {formatDate(subStatus?.current_period_end)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cancel confirmation messages */}
+                {cancelMessage && (
+                  <div className="mb-3 px-3 py-2 bg-[#F0FDF4] border border-[#16A34A]/20 rounded-md">
+                    <p className="text-xs text-[#16A34A]">{cancelMessage}</p>
+                  </div>
+                )}
+                {cancelError && (
+                  <div className="mb-3 px-3 py-2 bg-[#FEF2F2] border border-[#DC2626]/20 rounded-md">
+                    <p className="text-xs text-[#DC2626]">{cancelError}</p>
+                  </div>
+                )}
+
+                {willCancel ? (
+                  /* Already scheduled for cancellation */
+                  <div className="px-3 py-2 bg-[#FFFBEB] border border-[#D97706]/20 rounded-md">
+                    <p className="text-xs text-[#D97706]">
+                      Your subscription will end on <strong>{formatDate(subStatus?.current_period_end)}</strong>.
+                      You'll retain premium access until then.
+                    </p>
+                  </div>
+                ) : isSubActive ? (
+                  /* Active — show cancel option */
+                  <>
+                    {!showCancelConfirm ? (
+                      <button
+                        onClick={() => setShowCancelConfirm(true)}
+                        className="btn-danger text-sm"
+                      >
+                        Cancel Subscription
+                      </button>
+                    ) : (
+                      <div className="border border-[#DC2626]/20 rounded-md p-4 bg-[#FEF2F2]">
+                        <div className="flex items-start gap-2 mb-3">
+                          <AlertTriangle className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-[#111827]">Cancel your subscription?</p>
+                            <p className="text-xs text-[#6B7280] mt-1">
+                              Your premium access will continue until <strong>{formatDate(subStatus?.current_period_end)}</strong>.
+                              After that, you'll be downgraded to the free plan. You can re-subscribe anytime.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => { setShowCancelConfirm(false); setCancelError(''); }}
+                            className="btn-secondary text-sm"
+                            disabled={cancelLoading}
+                          >
+                            Keep Subscription
+                          </button>
+                          <button
+                            onClick={handleCancelSubscription}
+                            disabled={cancelLoading}
+                            className="btn-danger text-sm"
+                          >
+                            {cancelLoading ? 'Canceling...' : 'Yes, Cancel'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

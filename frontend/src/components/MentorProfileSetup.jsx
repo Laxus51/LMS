@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { User, DollarSign, Clock, Award, Save } from 'lucide-react';
 import mentorSessionApi from '../services/mentorSessionApi';
 
-const MentorProfileSetup = ({ onProfileCreated, onCancel }) => {
+const MentorProfileSetup = ({ onProfileCreated, onCancel, existingProfile = null }) => {
   const [formData, setFormData] = useState({
-    bio: '',
-    expertise_areas: '',
-    hourly_rate: 50,
-    years_experience: 1,
-    is_accepting_sessions: true,
-    min_session_duration: 30,
-    max_session_duration: 120
+    bio: existingProfile?.bio || '',
+    expertise_areas: existingProfile?.expertise_areas || '',
+    hourly_rate: existingProfile?.hourly_rate || 50,
+    years_experience: existingProfile?.years_experience || 1,
+    is_accepting_sessions: existingProfile?.is_accepting_sessions ?? true,
+    min_session_duration: existingProfile?.min_session_duration || 30,
+    max_session_duration: existingProfile?.max_session_duration || 120
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,11 +21,19 @@ const MentorProfileSetup = ({ onProfileCreated, onCancel }) => {
     setError('');
 
     try {
-      const profile = await mentorSessionApi.createMentorProfile(formData);
+      let profile;
+      if (existingProfile) {
+        // Update existing profile
+        profile = await mentorSessionApi.updateMentorProfile(formData);
+      } else {
+        // Create new profile
+        profile = await mentorSessionApi.createMentorProfile(formData);
+      }
       onProfileCreated(profile);
     } catch (error) {
-      setError(error.response?.data?.detail || 'Failed to create mentor profile');
-      console.error('Profile creation error:', error);
+      const action = existingProfile ? 'update' : 'create';
+      setError(error.response?.data?.detail || `Failed to ${action} mentor profile`);
+      console.error(`Profile ${action} error:`, error);
     } finally {
       setLoading(false);
     }
@@ -43,10 +51,10 @@ const MentorProfileSetup = ({ onProfileCreated, onCancel }) => {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
           <User className="w-6 h-6 mr-2" />
-          Create Your Mentor Profile
+          {existingProfile ? 'Edit Your Mentor Profile' : 'Create Your Mentor Profile'}
         </h2>
         <p className="text-gray-600 mt-2">
-          Set up your profile to start accepting mentoring sessions
+          {existingProfile ? 'Update your profile information' : 'Set up your profile to start accepting mentoring sessions'}
         </p>
       </div>
 
@@ -180,12 +188,12 @@ const MentorProfileSetup = ({ onProfileCreated, onCancel }) => {
             {loading ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Creating...
+                {existingProfile ? 'Updating...' : 'Creating...'}
               </div>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Create Profile
+                {existingProfile ? 'Update Profile' : 'Create Profile'}
               </>
             )}
           </button>

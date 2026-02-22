@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  * Dynamic loader hook that adapts to actual API response times
  * Provides intelligent progress estimation based on historical data
  */
-export const useDynamicLoader = (taskType = 'default') => {
+export const useDynamicLoader = (taskType = 'default', duration = null) => {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
@@ -13,19 +13,35 @@ export const useDynamicLoader = (taskType = 'default') => {
   const startTimeRef = useRef(null);
   const progressIntervalRef = useRef(null);
 
-  // Historical data storage key
-  const storageKey = `loader_history_${taskType}`;
+  // Historical data storage key with duration awareness
+  const storageKey = `loader_history_${taskType}${duration ? `_${duration}d` : ''}`;
   
+  // Helper function to get study plan estimate based on duration
+  const getStudyPlanEstimate = useCallback((planDuration) => {
+    if (!planDuration) return 10000;
+    
+    const safeDuration = Math.max(1, Number(planDuration) || 7);
+    if (safeDuration <= 7) {
+      return 8000;  // 8 seconds for 7-day plans (free tier)
+    } else if (safeDuration <= 30) {
+      return 12000; // 12 seconds for 30-day plans
+    } else if (safeDuration <= 60) {
+      return 15000; // 15 seconds for 60-day plans
+    } else {
+      return 18000; // 18 seconds for 90-day plans
+    }
+  }, []);
+
   // Get historical average response time for this task type
   const getHistoricalAverage = useCallback(() => {
     try {
       const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
       if (history.length === 0) {
-        // Default estimates based on task type
+        // Default estimates based on task type and duration
         const defaults = {
           'quiz_generation': 8000,      // 8 seconds
           'mock_exam_generation': 12000, // 12 seconds
-          'study_plan_generation': 15000, // 15 seconds
+          'study_plan_generation': getStudyPlanEstimate(duration),
           'default': 10000
         };
         return defaults[taskType] || defaults.default;
@@ -41,7 +57,7 @@ export const useDynamicLoader = (taskType = 'default') => {
       console.warn('Error reading loader history:', error);
       return 10000; // 10 second fallback
     }
-  }, [taskType, storageKey]);
+  }, [taskType, storageKey, duration, getStudyPlanEstimate]);
 
   // Store actual response time for future predictions
   const storeResponseTime = useCallback((duration) => {
@@ -55,18 +71,23 @@ export const useDynamicLoader = (taskType = 'default') => {
     }
   }, [storageKey]);
 
-  // Simple progress calculation that stays reasonable until completion
+  // Improved progress calculation that provides smoother progression
   const calculateProgress = useCallback((elapsed, estimated) => {
     // Use a more conservative approach that doesn't claim completion
     const normalizedTime = Math.min(elapsed / estimated, 1);
     
-    // Logarithmic progress that slows down but never reaches 100% until actual completion
-    if (normalizedTime < 0.8) {
-      // Normal progress up to 80%
-      return normalizedTime * 80;
+    // Smoother logarithmic progress that provides better user experience
+    if (normalizedTime < 0.6) {
+      // Steady progress up to 60% (corresponds to ~60% completion)
+      return normalizedTime * 100; // Direct mapping for first 60%
+    } else if (normalizedTime < 0.9) {
+      // Gradual slowdown from 60% to 85%
+      const progressRange = normalizedTime - 0.6; // 0 to 0.3
+      return 60 + (progressRange * 83.33); // 60% to 85%
     } else {
-      // Very slow progress from 80% to 90%, never reaching 100%
-      return 80 + (normalizedTime - 0.8) * 50; // Max 90%
+      // Very slow progress from 85% to 92%, never reaching 100%
+      const finalRange = normalizedTime - 0.9; // 0 to 0.1
+      return 85 + (finalRange * 70); // 85% to 92% max
     }
   }, []);
 
@@ -92,15 +113,17 @@ export const useDynamicLoader = (taskType = 'default') => {
       setProgress(newProgress);
       setActualDuration(elapsed);
       
-      // Update current step based on progress
-      if (newProgress < 25) {
+      // Update current step based on progress (supports up to 5 steps)
+      if (newProgress < 20) {
         setCurrentStep(0);
-      } else if (newProgress < 50) {
+      } else if (newProgress < 40) {
         setCurrentStep(1);
-      } else if (newProgress < 75) {
+      } else if (newProgress < 60) {
         setCurrentStep(2);
-      } else {
+      } else if (newProgress < 80) {
         setCurrentStep(3);
+      } else {
+        setCurrentStep(4);
       }
     }, 300); // Update every 300ms for smooth progress
 

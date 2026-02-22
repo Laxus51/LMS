@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { quizApi } from '../services/quizApi';
 
 const QuizAttempt = () => {
@@ -24,13 +24,13 @@ const QuizAttempt = () => {
     try {
       setIsLoading(true);
       const quizData = await quizApi.getQuiz(quizId);
-      
+
       // Check if quiz is already completed
       if (quizData.completed_at) {
         navigate(`/quiz/review/${quizId}`);
         return;
       }
-      
+
       setQuiz(quizData);
     } catch (err) {
       setError('Failed to load quiz: ' + err.message);
@@ -65,9 +65,9 @@ const QuizAttempt = () => {
     try {
       setIsSubmitting(true);
       setError('');
-      
+
       const result = await quizApi.submitQuiz(quiz.id, answers);
-      
+
       // Navigate to results page
       navigate(`/quiz/result/${quiz.id}`, { state: { result } });
     } catch (err) {
@@ -88,7 +88,7 @@ const QuizAttempt = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Taking Quiz" />
+        <TopBar title="Taking Quiz" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -101,7 +101,7 @@ const QuizAttempt = () => {
   if (error && !quiz) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Quiz Error" />
+        <TopBar title="Quiz Error" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -121,7 +121,7 @@ const QuizAttempt = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Taking Quiz" />
+      <TopBar title="Taking Quiz" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           {/* Quiz Header */}
@@ -139,7 +139,7 @@ const QuizAttempt = () => {
                 Progress: {getAnsweredCount()}/{getTotalQuestions()}
               </div>
               <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(getAnsweredCount() / getTotalQuestions()) * 100}%` }}
                 ></div>
@@ -160,16 +160,15 @@ const QuizAttempt = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   {index + 1}. {question.question}
                 </h3>
-                
+
                 <div className="space-y-2">
                   {question.options.map((option) => (
                     <label
                       key={option.option_id}
-                      className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                        userAnswers[question.question_id] === option.option_id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
+                      className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${userAnswers[question.question_id] === option.option_id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50'
+                        }`}
                     >
                       <input
                         type="radio"
@@ -197,11 +196,11 @@ const QuizAttempt = () => {
             >
               Cancel
             </button>
-            
+
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
-                {getAnsweredCount() === getTotalQuestions() ? 
-                  'All questions answered!' : 
+                {getAnsweredCount() === getTotalQuestions() ?
+                  'All questions answered!' :
                   `${getTotalQuestions() - getAnsweredCount()} questions remaining`
                 }
               </div>

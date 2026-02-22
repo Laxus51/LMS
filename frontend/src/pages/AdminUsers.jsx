@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import api from '../services/api';
 
 const AdminUsers = () => {
@@ -30,7 +30,7 @@ const AdminUsers = () => {
       setLoading(true);
       setError(null);
       const response = await api.get('/users/admin/users');
-      
+
       if (response.data.success) {
         setUsers(response.data.data);
       } else {
@@ -53,8 +53,8 @@ const AdminUsers = () => {
         setError('No internet connection. Please check your network and try again.');
       } else {
         setError(
-          err.response?.data?.message || 
-          err.message || 
+          err.response?.data?.message ||
+          err.message ||
           'Unable to load users right now. Please try again later.'
         );
       }
@@ -125,7 +125,7 @@ const AdminUsers = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="User Management" showBackButton={true} backTo="/dashboard" />
+      <TopBar title="User Management" showBackButton={true} backTo="/dashboard" />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -159,7 +159,7 @@ const AdminUsers = () => {
                 Complete list of all registered users in the system.
               </p>
             </div>
-            
+
             {users.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

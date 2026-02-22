@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { quizApi } from '../services/quizApi';
 
 const QuizHistory = () => {
@@ -38,16 +38,16 @@ const QuizHistory = () => {
     if (!Array.isArray(userQuizzes)) {
       return [];
     }
-    
+
     let filtered = userQuizzes;
-    
+
     // Apply filter
     if (filterBy === 'completed') {
       filtered = filtered.filter(quiz => quiz.completed_at);
     } else if (filterBy === 'incomplete') {
       filtered = filtered.filter(quiz => !quiz.completed_at);
     }
-    
+
     // Apply sort
     return filtered.sort((a, b) => {
       switch (sortBy) {
@@ -90,7 +90,7 @@ const QuizHistory = () => {
     const completed = userQuizzes.filter(quiz => quiz.completed_at);
     const totalScore = completed.reduce((sum, quiz) => sum + (quiz.score || 0), 0);
     const averageScore = completed.length > 0 ? Math.round(totalScore / completed.length) : 0;
-    
+
     return {
       total: userQuizzes.length,
       completed: completed.length,
@@ -102,7 +102,7 @@ const QuizHistory = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Quiz History" />
+        <TopBar title="Quiz History" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -117,7 +117,7 @@ const QuizHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Quiz History" />
+      <TopBar title="Quiz History" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -157,7 +157,7 @@ const QuizHistory = () => {
                   <option value="incomplete">Incomplete</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Sort by:</label>
                 <select
@@ -171,7 +171,7 @@ const QuizHistory = () => {
                 </select>
               </div>
             </div>
-            
+
             <button
               onClick={() => navigate('/quiz/create')}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -199,8 +199,8 @@ const QuizHistory = () => {
               {filterBy === 'all' ? 'No quizzes found' : `No ${filterBy} quizzes found`}
             </h3>
             <p className="text-gray-500 mb-4">
-              {filterBy === 'all' 
-                ? 'Start by creating your first quiz!' 
+              {filterBy === 'all'
+                ? 'Start by creating your first quiz!'
                 : `Try changing the filter or create a new quiz.`
               }
             </p>
@@ -221,9 +221,8 @@ const QuizHistory = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {quiz.certification}
                       </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        quiz.completed_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${quiz.completed_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
                         {quiz.completed_at ? 'Completed' : 'In Progress'}
                       </span>
                       {quiz.completed_at && quiz.score !== null && (
@@ -232,7 +231,7 @@ const QuizHistory = () => {
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="text-sm text-gray-600 space-y-1">
                       <div>Topic: {quiz.topic}</div>
                       <div>Difficulty: {quiz.difficulty}</div>
@@ -242,15 +241,14 @@ const QuizHistory = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex space-x-3">
                     <button
                       onClick={() => handleQuizAction(quiz)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        quiz.completed_at
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                      }`}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${quiz.completed_at
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
                     >
                       {quiz.completed_at ? 'Review' : 'Continue'}
                     </button>

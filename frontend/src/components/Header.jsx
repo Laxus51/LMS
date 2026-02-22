@@ -3,6 +3,7 @@ import { useAuth, USER_ROLES } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import NotificationPanel from './NotificationPanel';
 import { Crown } from 'lucide-react';
+import api from '../services/api';
 
 const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
   const navigate = useNavigate();
@@ -64,23 +65,17 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        const response = await api.get('/notifications/');
         
-        const response = await fetch('http://localhost:8000/notifications/', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const notifications = data.data || [];
+        if (response.data.success) {
+          const notifications = response.data.data || [];
           const unread = notifications.filter(notif => !notif.is_read).length;
           setUnreadCount(unread);
         }
       } catch (err) {
         console.error('Failed to fetch notification count:', err);
+        // Don't set error state here, just log it
+        // The axios interceptor will handle 401 errors appropriately
       }
     };
 
@@ -137,99 +132,8 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
           <div className="hidden md:flex items-center space-x-4">
             {/* Navigation Links */}
             <nav className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                  isActive('/dashboard')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span className="text-sm font-medium">Dashboard</span>
-              </button>
-              
-              <button
-                onClick={() => navigate('/courses')}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                  isActive('/courses')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
-                </svg>
-                <span className="text-sm font-medium">Courses</span>
-              </button>
-              
-              {/* Hide AI Tutor for mentor users */}
-              {userRole !== USER_ROLES.MENTOR && (
-                <button
-                onClick={() => navigate('/tutor-chat')}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                  isActive('/tutor-chat')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <span className="text-sm font-medium">AI Tutor</span>
-              </button>
-              )}
-              
-              <button
-                onClick={() => navigate('/study-plan')}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                  isActive('/study-plan')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                <span className="text-sm font-medium">Study Plan</span>
-              </button>
-              
-              {/* Hide Quiz for mentor users */}
-              {userRole !== USER_ROLES.MENTOR && (
-                <button
-                  onClick={() => navigate('/quiz/create')}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                    isActive('/quiz')
-                      ? 'bg-indigo-100 text-indigo-700 font-medium'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="text-sm font-medium">Quiz</span>
-                </button>
-              )}
-              
-              {/* Mock Exam - Premium Only */}
-              {canAccessPremium() && (
-                <button
-                  onClick={() => navigate('/mock-exam/create')}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                    isActive('/mock-exam')
-                      ? 'bg-indigo-100 text-indigo-700 font-medium'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <Crown className="w-5 h-5" />
-                  <span className="text-sm font-medium">Mock Exam</span>
-                </button>
-              )}
-
-              {/* Mentor Sessions - For mentors */}
-              {userRole === USER_ROLES.MENTOR && (
+              {/* Show different navigation for mentors */}
+              {userRole === USER_ROLES.MENTOR ? (
                 <button
                   onClick={() => navigate('/mentor/dashboard')}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
@@ -243,10 +147,98 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
                   </svg>
                   <span className="text-sm font-medium">Mentor Dashboard</span>
                 </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                      isActive('/dashboard')
+                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="text-sm font-medium">Dashboard</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/courses')}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                      isActive('/courses')
+                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="text-sm font-medium">Courses</span>
+                  </button>
+                </>
               )}
-
-              {/* Mentor Booking - For students */}
+              
+              {/* Only show student features for non-mentors */}
               {userRole !== USER_ROLES.MENTOR && (
+                <>
+                  <button
+                  onClick={() => navigate('/tutor-chat')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/tutor-chat')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span className="text-sm font-medium">AI Tutor</span>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/study-plan')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/study-plan')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  <span className="text-sm font-medium">Study Plan</span>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/quiz/create')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    isActive('/quiz')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="text-sm font-medium">Quiz</span>
+                </button>
+                
+                {/* Mock Exam - Premium Only */}
+                {canAccessPremium() && (
+                  <button
+                    onClick={() => navigate('/mock-exam/create')}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                      isActive('/mock-exam')
+                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Crown className="w-5 h-5" />
+                    <span className="text-sm font-medium">Mock Exam</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => navigate('/mentor-booking')}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
@@ -265,6 +257,7 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
                     <Crown className="w-3 h-3 text-yellow-500" />
                   )}
                 </button>
+                </>
               )}
 
               
@@ -398,99 +391,7 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
               </div>
               
               {/* Navigation Links */}
-              <button
-                onClick={() => handleNavigation('/dashboard')}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                  isActive('/dashboard')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span>Dashboard</span>
-              </button>
-              
-              <button
-                onClick={() => handleNavigation('/courses')}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                  isActive('/courses')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
-                </svg>
-                <span>Courses</span>
-              </button>
-              
-              {/* Hide AI Tutor for mentor users */}
-              {userRole !== USER_ROLES.MENTOR && (
-                <button
-                onClick={() => handleNavigation('/tutor-chat')}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                  isActive('/tutor-chat')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <span>AI Tutor</span>
-              </button>
-              )}
-              
-              <button
-                onClick={() => handleNavigation('/study-plan')}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                  isActive('/study-plan')
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                <span>Study Plan</span>
-              </button>
-              
-              {/* Hide Quiz for mentor users */}
-              {userRole !== USER_ROLES.MENTOR && (
-                <button
-                  onClick={() => handleNavigation('/quiz/create')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                    isActive('/quiz')
-                      ? 'bg-indigo-100 text-indigo-700 font-medium'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Quiz</span>
-                </button>
-              )}
-              
-              {/* Mock Exam - Premium Only */}
-              {canAccessPremium() && (
-                <button
-                  onClick={() => handleNavigation('/mock-exam/create')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
-                    isActive('/mock-exam')
-                      ? 'bg-indigo-100 text-indigo-700 font-medium'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <Crown className="w-5 h-5" />
-                  <span>Mock Exam</span>
-                </button>
-              )}
-
-              {/* Mentor Sessions - For mentors */}
-              {userRole === USER_ROLES.MENTOR && (
+              {userRole === USER_ROLES.MENTOR ? (
                 <button
                   onClick={() => handleNavigation('/mentor/dashboard')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
@@ -504,10 +405,98 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
                   </svg>
                   <span>Mentor Dashboard</span>
                 </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleNavigation('/dashboard')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                      isActive('/dashboard')
+                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span>Dashboard</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleNavigation('/courses')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                      isActive('/courses')
+                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>Courses</span>
+                  </button>
+                </>
               )}
-
-              {/* Mentor Booking - For students */}
+              
+              {/* Only show student features for non-mentors */}
               {userRole !== USER_ROLES.MENTOR && (
+                <>
+                  <button
+                  onClick={() => handleNavigation('/tutor-chat')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                    isActive('/tutor-chat')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>AI Tutor</span>
+                </button>
+                
+                <button
+                  onClick={() => handleNavigation('/study-plan')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                    isActive('/study-plan')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  <span>Study Plan</span>
+                </button>
+                
+                <button
+                  onClick={() => handleNavigation('/quiz/create')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                    isActive('/quiz')
+                      ? 'bg-indigo-100 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Quiz</span>
+                </button>
+                
+                {/* Mock Exam - Premium Only */}
+                {canAccessPremium() && (
+                  <button
+                    onClick={() => handleNavigation('/mock-exam/create')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
+                      isActive('/mock-exam')
+                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Crown className="w-5 h-5" />
+                    <span>Mock Exam</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => handleNavigation('/mentor-booking')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-3 ${
@@ -524,6 +513,7 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
                     <Crown className="w-3 h-3 text-yellow-500 ml-auto" />
                   )}
                 </button>
+                </>
               )}
 
               
@@ -628,18 +618,10 @@ const Header = ({ title, showBackButton = false, backTo = '/dashboard' }) => {
         // Refresh unread count when notifications are updated
         const fetchUnreadCount = async () => {
           try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+            const response = await api.get('/notifications/');
             
-            const response = await fetch('http://localhost:8000/notifications/', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            
-            if (response.ok) {
-              const data = await response.json();
-              const notifications = data.data || [];
+            if (response.data.success) {
+              const notifications = response.data.data || [];
               const unread = notifications.filter(notif => !notif.is_read).length;
               setUnreadCount(unread);
             }

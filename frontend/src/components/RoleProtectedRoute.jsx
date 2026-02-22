@@ -19,7 +19,7 @@ const RoleProtectedRoute = ({ children, requiredRole, allowedRoles, redirectTo =
 
   // Check access based on allowed roles array
   if (allowedRoles && allowedRoles.length > 0) {
-    const hasAllowedRole = allowedRoles.some(role => hasRole(role));
+    const hasAllowedRole = allowedRoles.includes(userRole);
     if (!hasAllowedRole) {
       return <Navigate to={redirectTo} replace />;
     }

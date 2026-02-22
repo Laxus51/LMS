@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import StudyPlanDisplay from '../components/StudyPlanDisplay';
 import { studyPlanApi } from '../services/studyPlanApi';
 
@@ -52,7 +52,7 @@ const StudyPlanViewPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Study Plan" showBackButton onBackClick={handleBack} />
+        <TopBar title="Study Plan" showBackButton onBackClick={handleBack} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -65,7 +65,7 @@ const StudyPlanViewPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Study Plan" showBackButton onBackClick={handleBack} />
+        <TopBar title="Study Plan" showBackButton onBackClick={handleBack} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="text-red-600 text-lg mb-4">{error}</div>
@@ -84,7 +84,7 @@ const StudyPlanViewPage = () => {
   if (!studyPlan) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Study Plan" showBackButton onBackClick={handleBack} />
+        <TopBar title="Study Plan" showBackButton onBackClick={handleBack} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="text-gray-600 text-lg mb-4">Study plan not found</div>
@@ -102,9 +102,9 @@ const StudyPlanViewPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Study Plan" showBackButton onBackClick={handleBack} />
+      <TopBar title="Study Plan" showBackButton onBackClick={handleBack} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <StudyPlanDisplay 
+        <StudyPlanDisplay
           plan={studyPlan}
           onBack={handleBack}
           isPreview={isPreview}

@@ -4,7 +4,7 @@ from datetime import datetime
 
 class CreateSubscriptionRequest(BaseModel):
     """Request schema for creating a new subscription"""
-    price_id: str
+    price_id: Optional[str] = None
     success_url: str
     cancel_url: str
 

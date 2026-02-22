@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import TopBar from '../components/TopBar';
 
 const CourseCreation = () => {
   const navigate = useNavigate();
@@ -35,29 +36,15 @@ const CourseCreation = () => {
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/courses/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
+      const response = await api.post('/courses/', formData);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess('Course created successfully!');
-        setFormData({ title: '', description: '', instructor_name: '' });
-        setTimeout(() => {
-          navigate('/courses');
-        }, 2000);
-      } else {
-        setError(data.message || 'Failed to create course');
-      }
+      setSuccess('Course created successfully!');
+      setFormData({ title: '', description: '', instructor_name: '' });
+      setTimeout(() => {
+        navigate('/courses');
+      }, 2000);
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to create course. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +75,7 @@ const CourseCreation = () => {
               {error}
             </div>
           )}
-          
+
           {success && (
             <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
               {success}

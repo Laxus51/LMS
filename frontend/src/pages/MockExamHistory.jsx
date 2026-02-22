@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { mockExamApi } from '../services/mockExamApi';
 
 const MockExamHistory = () => {
@@ -45,6 +45,16 @@ const MockExamHistory = () => {
       setStatistics(statsData);
     } catch (err) {
       console.error('Failed to load statistics:', err);
+      // Set default statistics on error to prevent undefined access
+      setStatistics({
+        total_exams: 0,
+        passed_exams: 0,
+        failed_exams: 0,
+        pass_rate: 0.0,
+        average_score: 0.0,
+        highest_score: 0.0,
+        latest_score: 0.0
+      });
     } finally {
       setIsLoadingStats(false);
     }
@@ -68,7 +78,7 @@ const MockExamHistory = () => {
   const getFilteredAndSortedExams = () => {
     // Ensure exams is an array and filter out any invalid entries
     const validExams = Array.isArray(exams) ? exams.filter(exam => exam && exam.id) : [];
-    
+
     let filtered = validExams.filter(exam => {
       const matchesCertification = !filterCertification || exam.certification === filterCertification;
       const matchesStatus = !filterStatus || exam.status === filterStatus;
@@ -78,12 +88,12 @@ const MockExamHistory = () => {
     return filtered.sort((a, b) => {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
-      
+
       if (sortBy === 'created_at' || sortBy === 'completed_at') {
         aValue = new Date(aValue);
         bValue = new Date(bValue);
       }
-      
+
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1;
       } else {
@@ -123,7 +133,7 @@ const MockExamHistory = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Mock Exam History" />
+        <TopBar title="Mock Exam History" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -138,7 +148,7 @@ const MockExamHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Mock Exam History" />
+      <TopBar title="Mock Exam History" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -165,24 +175,24 @@ const MockExamHistory = () => {
               </div>
               <div className="text-sm text-gray-600">Total Exams</div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-2xl font-bold text-green-600 mb-2">
                 {statistics.passed_exams || 0}
               </div>
               <div className="text-sm text-gray-600">Passed Exams</div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-2xl font-bold text-purple-600 mb-2">
-                {statistics.average_score ? `${statistics.average_score.toFixed(1)}%` : '0%'}
+                {statistics.average_score !== undefined && statistics.average_score !== null ? `${statistics.average_score.toFixed(1)}%` : '0%'}
               </div>
               <div className="text-sm text-gray-600">Average Score</div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-2xl font-bold text-orange-600 mb-2">
-                {statistics.pass_rate ? `${statistics.pass_rate.toFixed(1)}%` : '0%'}
+                {statistics.pass_rate !== undefined && statistics.pass_rate !== null ? `${statistics.pass_rate.toFixed(1)}%` : '0%'}
               </div>
               <div className="text-sm text-gray-600">Pass Rate</div>
             </div>
@@ -214,7 +224,7 @@ const MockExamHistory = () => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Filter by Status
@@ -229,7 +239,7 @@ const MockExamHistory = () => {
                 <option value="fail">Failed</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sort by
@@ -245,7 +255,7 @@ const MockExamHistory = () => {
                 <option value="certification">Certification</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Order
@@ -274,7 +284,7 @@ const MockExamHistory = () => {
               {exams.length === 0 ? 'No Mock Exams Yet' : 'No Exams Match Your Filters'}
             </h3>
             <p className="text-gray-600 mb-4">
-              {exams.length === 0 
+              {exams.length === 0
                 ? 'Take your first mock exam to start tracking your progress'
                 : 'Try adjusting your filters to see more results'
               }
@@ -291,70 +301,70 @@ const MockExamHistory = () => {
             {filteredExams.map((exam) => (
               exam && exam.id ? (
                 <div key={exam.id} className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      <h3 className="text-lg font-medium text-gray-900 mr-4">
-                        {exam.certification} Mock Exam
-                      </h3>
-                      {getStatusBadge(exam.status, exam.score)}
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <h3 className="text-lg font-medium text-gray-900 mr-4">
+                          {exam.certification} Mock Exam
+                        </h3>
+                        {getStatusBadge(exam.status, exam.score)}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                        <div>
+                          <span className="font-medium">Level:</span> Certification
+                        </div>
+                        <div>
+                          <span className="font-medium">Score:</span>
+                          <span className={`ml-1 font-bold ${getScoreColor(exam.score)}`}>
+                            {exam.score}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium">Completed:</span> {exam.completed_at ? new Date(exam.completed_at).toLocaleDateString() : 'In Progress'}
+                        </div>
+                        <div>
+                          <span className="font-medium">Duration:</span> {exam.created_at && exam.completed_at ?
+                            Math.round((new Date(exam.completed_at) - new Date(exam.created_at)) / 60000) + ' min' :
+                            'N/A'
+                          }
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Level:</span> Certification
-                      </div>
-                      <div>
-                        <span className="font-medium">Score:</span> 
-                        <span className={`ml-1 font-bold ${getScoreColor(exam.score)}`}>
-                          {exam.score}%
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Completed:</span> {exam.completed_at ? new Date(exam.completed_at).toLocaleDateString() : 'In Progress'}
-                      </div>
-                      <div>
-                        <span className="font-medium">Duration:</span> {exam.created_at && exam.completed_at ? 
-                          Math.round((new Date(exam.completed_at) - new Date(exam.created_at)) / 60000) + ' min' : 
-                          'N/A'
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-2 ml-4">
-                    {exam.completed_at && (
-                      <>
+
+                    <div className="flex space-x-2 ml-4">
+                      {exam.completed_at && (
+                        <>
+                          <button
+                            onClick={() => navigate(`/mock-exam/result/${exam.id}`)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            Results
+                          </button>
+                          <button
+                            onClick={() => navigate(`/mock-exam/review/${exam.id}`)}
+                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm"
+                          >
+                            Review
+                          </button>
+                        </>
+                      )}
+                      {!exam.completed_at && (
                         <button
-                          onClick={() => navigate(`/mock-exam/result/${exam.id}`)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                          onClick={() => navigate(`/mock-exam/attempt/${exam.id}`)}
+                          className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm"
                         >
-                          Results
+                          Continue
                         </button>
-                        <button
-                          onClick={() => navigate(`/mock-exam/review/${exam.id}`)}
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm"
-                        >
-                          Review
-                        </button>
-                      </>
-                    )}
-                    {!exam.completed_at && (
+                      )}
                       <button
-                        onClick={() => navigate(`/mock-exam/attempt/${exam.id}`)}
-                        className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm"
+                        onClick={() => handleDeleteExam(exam.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
                       >
-                        Continue
+                        Delete
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteExam(exam.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
-                    >
-                      Delete
-                    </button>
+                    </div>
                   </div>
-                </div>
                 </div>
               ) : null
             ))}

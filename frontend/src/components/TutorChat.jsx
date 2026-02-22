@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatApi } from '../services/chatApi';
-import { Send, MessageSquare, Trash2, Plus } from 'lucide-react';
+import { Send, MessageSquare, Trash2, Plus, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const TutorChat = () => {
   const [conversations, setConversations] = useState([]);
@@ -8,35 +8,25 @@ const TutorChat = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [accessStatus, setAccessStatus] = useState(null);
   const [isLoadingAccess, setIsLoadingAccess] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
-  // Check access status and load conversations on component mount
-  useEffect(() => {
-    checkAccessStatus();
-  }, []);
+  useEffect(() => { checkAccessStatus(); }, []);
 
   const checkAccessStatus = async () => {
     try {
       setIsLoadingAccess(true);
       const status = await chatApi.getAccessStatus();
       setAccessStatus(status);
-      
-      // Load conversations for all users except mentors
-      if (status.role !== 'mentor') {
-        await loadConversations();
-      }
+      if (status.role !== 'mentor') await loadConversations();
     } catch (error) {
       console.error('Failed to check access status:', error);
     } finally {
@@ -58,6 +48,7 @@ const TutorChat = () => {
       const data = await chatApi.getConversation(conversationId);
       setCurrentConversation(data);
       setMessages(data.messages || []);
+      setHistoryOpen(false); // auto-close on mobile after selection
     } catch (error) {
       console.error('Failed to load conversation:', error);
     }
@@ -69,6 +60,7 @@ const TutorChat = () => {
       setConversations([newConversation, ...conversations]);
       setCurrentConversation(newConversation);
       setMessages([]);
+      setHistoryOpen(false);
     } catch (error) {
       console.error('Failed to create conversation:', error);
     }
@@ -77,7 +69,7 @@ const TutorChat = () => {
   const deleteConversation = async (conversationId) => {
     try {
       await chatApi.deleteConversation(conversationId);
-      setConversations(conversations.filter(conv => conv.id !== conversationId));
+      setConversations(conversations.filter(c => c.id !== conversationId));
       if (currentConversation?.id === conversationId) {
         setCurrentConversation(null);
         setMessages([]);
@@ -96,38 +88,22 @@ const TutorChat = () => {
     setIsLoading(true);
 
     try {
-      // Add user message to UI immediately
-      const newUserMessage = {
-        role: 'USER',
-        content: userMessage,
-        timestamp: new Date().toISOString()
-      };
+      const newUserMessage = { role: 'USER', content: userMessage, timestamp: new Date().toISOString() };
       setMessages(prev => [...prev, newUserMessage]);
 
-      // Send message to API
       const response = await chatApi.sendMessage(userMessage, currentConversation?.id);
-      
-      // Update current conversation if it was created
+
       if (!currentConversation && response.conversation) {
         setCurrentConversation(response.conversation);
-        await loadConversations(); // Refresh conversations list
+        await loadConversations();
       }
 
-      // Add AI response to messages
-      const aiMessage = {
-        role: 'ASSISTANT',
-        content: response.message.content,
-        timestamp: new Date().toISOString()
-      };
+      const aiMessage = { role: 'ASSISTANT', content: response.message.content, timestamp: new Date().toISOString() };
       setMessages(prev => [...prev, aiMessage]);
-      
-      // Refresh access status after sending message (for free users)
-      if (accessStatus?.role === 'free') {
-        await checkAccessStatus();
-      }
+
+      if (accessStatus?.role === 'free') await checkAccessStatus();
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Remove the user message if sending failed
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -136,159 +112,147 @@ const TutorChat = () => {
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'Just now';
-    
     const date = new Date(timestamp);
-    if (isNaN(date.getTime())) {
-      return 'Just now';
-    }
-    
-    return date.toLocaleString();
+    return isNaN(date.getTime()) ? 'Just now' : date.toLocaleString();
   };
 
-  // Loading state
   if (isLoadingAccess) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-full bg-[#F9FAFB]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading chat...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#2563EB] border-t-transparent mx-auto mb-3" />
+          <p className="text-sm text-[#6B7280]">Loading chat...</p>
         </div>
       </div>
     );
   }
 
-  // Mentor role restriction - hide chat completely
-  if (accessStatus?.role === 'mentor') {
-    return null;
-  }
+  if (accessStatus?.role === 'mentor') return null;
 
-  // No access (unknown role or error) - but allow free users to see chat interface
   if (!accessStatus || (!accessStatus.has_access && accessStatus?.role !== 'free')) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
-          <MessageSquare className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h2>
-          <p className="text-gray-600 mb-4">{accessStatus?.message || 'You do not have access to the tutor chat.'}</p>
+      <div className="flex items-center justify-center h-full bg-[#F9FAFB]">
+        <div className="card max-w-sm text-center">
+          <MessageSquare className="w-10 h-10 text-[#D1D5DB] mx-auto mb-3" />
+          <h2 className="text-sm font-semibold text-[#111827] mb-1">Access Restricted</h2>
+          <p className="text-xs text-[#6B7280]">{accessStatus?.message || 'You do not have access to the tutor chat.'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-gray-50">
-      {/* Admin indicator */}
-      {accessStatus?.role === 'admin' && (
-        <div className="absolute top-4 right-4 z-10 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-          Admin View
-        </div>
+    <div className="flex h-full bg-[#F9FAFB] relative">
+      {/* Chat History Panel — overlay on mobile, side panel on desktop */}
+      {historyOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/30 z-30" onClick={() => setHistoryOpen(false)} />
       )}
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col overflow-hidden`}>
-        <div className="p-4 border-b border-gray-200">
+      <div
+        className={`
+          ${historyOpen ? 'translate-x-0' : '-translate-x-full md:-translate-x-full'}
+          fixed md:relative z-40 md:z-auto
+          w-64 h-full bg-white border-r border-[#E5E7EB] flex flex-col
+          transition-transform duration-200 ease-in-out
+          ${historyOpen ? 'md:translate-x-0 md:w-64' : 'md:w-0 md:overflow-hidden'}
+        `}
+      >
+        <div className="p-3 border-b border-[#E5E7EB] flex items-center gap-2">
           <button
             onClick={createNewConversation}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-primary flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5"
           >
-            <Plus className="w-4 h-4" />
-            New Conversation
+            <Plus className="w-3.5 h-3.5" /> New Chat
+          </button>
+          <button onClick={() => setHistoryOpen(false)} className="p-1.5 text-[#9CA3AF] hover:text-[#111827] rounded-md hover:bg-[#F9FAFB]">
+            <PanelLeftClose className="w-4 h-4" />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto">
-          {conversations.map((conversation) => (
-            <div
-              key={conversation.id}
-              className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                currentConversation?.id === conversation.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
-              }`}
-              onClick={() => loadConversation(conversation.id)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">
-                    {conversation.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatTimestamp(conversation.created_at)}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation(conversation.id);
-                  }}
-                  className="ml-2 p-1 text-gray-400 hover:text-red-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <MessageSquare className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-900">AI Tutor Chat</h1>
-          </div>
-          {currentConversation && (
-            <span className="text-sm text-gray-500">
-              {currentConversation.title}
-            </span>
-          )}
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="text-center text-gray-500 mt-8">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium">Welcome to AI Tutor Chat</p>
-              <p className="text-sm mt-2">Ask me anything about Microsoft certifications like AZ-900, SC-900, or AZ-104!</p>
-            </div>
+          {conversations.length === 0 ? (
+            <p className="text-xs text-[#9CA3AF] text-center py-6">No conversations yet</p>
           ) : (
-            messages.map((message, index) => (
+            conversations.map((conversation) => (
               <div
-                key={index}
-                className={`flex ${
-                  message.role === 'user' || message.role === 'USER' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-3xl px-4 py-2 rounded-lg ${
-                    message.role === 'user' || message.role === 'USER'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-900'
+                key={conversation.id}
+                className={`px-3 py-2.5 border-b border-[#F3F4F6] cursor-pointer hover:bg-[#F9FAFB] text-left ${currentConversation?.id === conversation.id
+                    ? 'bg-[#EFF6FF] border-l-[3px] border-l-[#2563EB]'
+                    : ''
                   }`}
-                >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                  <div
-                    className={`text-xs mt-1 ${
-                      message.role === 'user' || message.role === 'USER' ? 'text-blue-100' : 'text-gray-500'
-                    }`}
-                  >
-                    {formatTimestamp(message.timestamp || message.created_at)}
+                onClick={() => loadConversation(conversation.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs font-medium text-[#111827] truncate">{conversation.title}</h3>
+                    <p className="text-[10px] text-[#9CA3AF] mt-0.5">{formatTimestamp(conversation.created_at)}</p>
                   </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteConversation(conversation.id); }}
+                    className="ml-1.5 p-1 text-[#D1D5DB] hover:text-[#DC2626] transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      {/* Main Chat Area — takes full remaining width */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Chat header */}
+        <div className="h-12 bg-white border-b border-[#E5E7EB] flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHistoryOpen(!historyOpen)}
+              className="p-1.5 text-[#6B7280] hover:text-[#111827] rounded-md hover:bg-[#F9FAFB]"
+              title={historyOpen ? 'Close history' : 'Show history'}
+            >
+              {historyOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+            </button>
+            <h2 className="text-sm font-semibold text-[#111827]">AI Tutor</h2>
+          </div>
+          {currentConversation && (
+            <span className="text-xs text-[#9CA3AF] truncate ml-2 max-w-[200px]">{currentConversation.title}</span>
+          )}
+          {accessStatus?.role === 'admin' && (
+            <span className="badge badge-error text-[10px]">Admin</span>
+          )}
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 ? (
+            <div className="text-center mt-12">
+              <MessageSquare className="w-10 h-10 text-[#D1D5DB] mx-auto mb-3" />
+              <p className="text-sm font-medium text-[#111827] mb-1">Welcome to AI Tutor</p>
+              <p className="text-xs text-[#6B7280]">Ask me anything about Microsoft certifications like AZ-900, SC-900, or AZ-104!</p>
+            </div>
+          ) : (
+            messages.map((message, index) => {
+              const isUser = message.role === 'user' || message.role === 'USER';
+              return (
+                <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] lg:max-w-[70%] px-3.5 py-2.5 rounded-lg text-sm ${isUser
+                      ? 'bg-[#2563EB] text-white'
+                      : 'bg-white border border-[#E5E7EB] text-[#111827]'
+                    }`}>
+                    <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                    <div className={`text-[10px] mt-1 ${isUser ? 'text-blue-200' : 'text-[#9CA3AF]'}`}>
+                      {formatTimestamp(message.timestamp || message.created_at)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-white border border-gray-200 text-gray-900 max-w-3xl px-4 py-2 rounded-lg">
+              <div className="bg-white border border-[#E5E7EB] text-[#111827] px-3.5 py-2.5 rounded-lg text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span>AI Tutor is typing...</span>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#2563EB] border-t-transparent" />
+                  <span className="text-[#6B7280]">Typing...</span>
                 </div>
               </div>
             </div>
@@ -296,45 +260,42 @@ const TutorChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Message Input */}
-        <div className="bg-white border-t border-gray-200 p-4">
-          {/* Free user status indicators */}
+        {/* Input area */}
+        <div className="bg-white border-t border-[#E5E7EB] p-3 shrink-0">
           {accessStatus?.role === 'free' && accessStatus.remaining_messages > 0 && (
-            <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
+            <div className="mb-2 px-3 py-1.5 bg-[#FFFBEB] border border-[#D97706]/20 rounded-md">
+              <p className="text-xs text-[#D97706]">
                 {accessStatus.remaining_messages} message{accessStatus.remaining_messages === 1 ? '' : 's'} remaining today
               </p>
             </div>
           )}
           {accessStatus?.role === 'free' && !accessStatus.has_access && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800 font-medium">
-                Daily limit reached (3/3 messages used). 
-                <button 
-                  className="text-blue-600 hover:text-blue-800 underline ml-1"
-                  onClick={() => window.location.href = '/pricing'}
-                >
+            <div className="mb-2 px-3 py-1.5 bg-[#FEF2F2] border border-[#DC2626]/20 rounded-md">
+              <p className="text-xs text-[#DC2626]">
+                Daily limit reached.{' '}
+                <button className="text-[#2563EB] hover:underline font-medium" onClick={() => window.location.href = '/pricing'}>
                   Upgrade to Premium
-                </button> for unlimited access.
+                </button>{' '}
+                for unlimited access.
               </p>
             </div>
           )}
-          <form onSubmit={sendMessage} className="flex gap-3">
+          <form onSubmit={sendMessage} className="flex gap-2">
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask me about Microsoft certifications..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ask about Microsoft certifications..."
+              className="input flex-1"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={!inputMessage.trim() || isLoading || (accessStatus?.role === 'free' && !accessStatus.has_access)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="btn-primary px-4 flex items-center gap-1.5 shrink-0"
             >
-              <Send className="w-4 h-4" />
-              Send
+              <Send className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-sm">Send</span>
             </button>
           </form>
         </div>

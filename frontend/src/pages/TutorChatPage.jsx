@@ -1,15 +1,15 @@
 import React from 'react';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import TutorChat from '../components/TutorChat';
 
 const TutorChatPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="AI Tutor" />
-      <div className="h-[calc(100vh-4rem)]">
+    <>
+      <TopBar title="AI Tutor" />
+      <div className="flex-1 overflow-hidden">
         <TutorChat />
       </div>
-    </div>
+    </>
   );
 };
 

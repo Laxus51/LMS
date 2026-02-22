@@ -88,7 +88,7 @@ export const mockExamApi = {
   getMockExamStatistics: async () => {
     try {
       const response = await api.get('/mock-exam/statistics/summary');
-      return response.data;
+      return response.data.statistics; // Extract statistics from the response wrapper
     } catch (error) {
       console.error('Error fetching mock exam statistics:', error);
       throw new Error(error.response?.data?.detail || 'Failed to fetch mock exam statistics');

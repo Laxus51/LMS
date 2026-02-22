@@ -1,178 +1,178 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
-import SubscriptionUpgrade from '../components/SubscriptionUpgrade';
-import { Crown, Check, X } from 'lucide-react';
+import TopBar from '../components/TopBar';
+import paymentApi from '../services/paymentApi';
+import { Crown, Check } from 'lucide-react';
+
+
 
 const Pricing = () => {
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [error, setError] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const isPremium = user?.role === 'premium' || user?.role === 'admin';
 
-  const features = {
-    free: [
-      'Basic quiz generation (limited)',
-      'Access to free courses',
-      'Basic study plans',
-      'Browse mentor profiles (view-only)',
-      'Community support'
-    ],
-    premium: [
-      'Unlimited quiz generation',
-      'Access to all courses',
-      'Advanced study plans',
-      'Mock exams',
-      'Book mentor sessions',
-      'Priority AI tutor support',
-      'Detailed progress analytics',
-      'Export study materials',
-      'Priority customer support'
-    ]
+  const handleUpgrade = async () => {
+    try {
+      setUpgradeLoading(true);
+      setError('');
+      const response = await paymentApi.createSubscription({
+        success_url: `${window.location.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${window.location.origin}/subscription/cancel`
+      });
+      // Redirect to Stripe Checkout
+      if (response.session_url) {
+        window.location.href = response.session_url;
+      } else {
+        setError('Failed to create checkout session. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error creating subscription:', err);
+      if (err.response?.status === 400) {
+        setError('You already have an active subscription.');
+      } else {
+        setError(err.response?.data?.detail || 'Failed to start checkout. Please try again.');
+      }
+    } finally {
+      setUpgradeLoading(false);
+    }
   };
 
+  const freeFeatures = [
+    'Basic quiz generation (limited)',
+    'Access to free courses',
+    'Basic study plans',
+    'Browse mentor profiles',
+    'Community support'
+  ];
+
+  const premiumFeatures = [
+    'Unlimited quiz generation',
+    'Access to all courses',
+    'Advanced study plans',
+    'Mock exams',
+    'Book mentor sessions',
+    'Priority AI tutor support',
+    'Progress analytics',
+    'Priority support'
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Choose Your Learning Plan
-          </h1>
-          <p className="text-xl text-gray-600">
-            Unlock your full potential with our premium features
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Free Plan */}
-          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Free Plan</h3>
-              <div className="text-4xl font-bold text-gray-900 mb-2">
-                $0<span className="text-lg text-gray-600">/month</span>
-              </div>
-              <p className="text-gray-600">Perfect for getting started</p>
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              {features.free.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              disabled={user?.role === 'free'}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                user?.role === 'free'
-                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  : 'bg-gray-600 text-white hover:bg-gray-700'
-              }`}
-            >
-              {user?.role === 'free' ? 'Current Plan' : 'Downgrade to Free'}
-            </button>
+    <>
+      <TopBar title="Pricing" />
+      <div className="app-content">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-xl font-bold text-[#111827] mb-1">Choose Your Plan</h1>
+            <p className="text-sm text-[#6B7280]">Unlock your full potential with premium features</p>
           </div>
 
-          {/* Premium Plan */}
-          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-blue-500 relative">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                Most Popular
-              </span>
+          {error && (
+            <div className="mb-4 px-3 py-2 bg-[#FEF2F2] border border-[#DC2626]/20 rounded-md max-w-lg mx-auto">
+              <p className="text-xs text-[#DC2626]">{error}</p>
             </div>
+          )}
 
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2 flex items-center justify-center">
-                <Crown className="w-6 h-6 text-yellow-500 mr-2" />
-                Premium Plan
-              </h3>
-              <div className="text-4xl font-bold text-blue-600 mb-2">
-                $9.99<span className="text-lg text-gray-600">/month</span>
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Free Plan */}
+            <div className="card">
+              <div className="mb-5">
+                <h3 className="text-base font-semibold text-[#111827] mb-1">Free</h3>
+                <div className="text-2xl font-bold text-[#111827]">
+                  $0<span className="text-sm text-[#9CA3AF] font-normal">/month</span>
+                </div>
+                <p className="text-xs text-[#6B7280] mt-0.5">Perfect for getting started</p>
               </div>
-              <p className="text-gray-600">Everything you need to excel</p>
+
+              <ul className="space-y-2 mb-6">
+                {freeFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-[#6B7280]">
+                    <Check className="w-4 h-4 text-[#16A34A] shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                disabled={user?.role === 'free'}
+                className={`w-full py-2 rounded-md text-sm font-medium ${user?.role === 'free'
+                  ? 'bg-[#F9FAFB] text-[#9CA3AF] border border-[#E5E7EB] cursor-not-allowed'
+                  : 'btn-secondary'
+                  }`}
+              >
+                {user?.role === 'free' ? 'Current Plan' : 'Free Plan'}
+              </button>
             </div>
 
-            <ul className="space-y-3 mb-8">
-              {features.premium.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700">{feature}</span>
-                </li>
-              ))}
-            </ul>
+            {/* Premium Plan */}
+            <div className="card border-[#2563EB] relative">
+              <div className="absolute -top-3 left-4">
+                <span className="bg-[#2563EB] text-white text-xs font-medium px-2.5 py-0.5 rounded">
+                  Recommended
+                </span>
+              </div>
 
-            <button
-              onClick={() => isPremium ? null : setShowUpgrade(true)}
-              disabled={isPremium}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                isPremium
-                  ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-              }`}
-            >
-              {isPremium ? (
-                <>
-                  <Check className="w-5 h-5 inline mr-2" />
-                  Current Plan
-                </>
-              ) : (
-                'Upgrade to Premium'
-              )}
-            </button>
+              <div className="mb-5">
+                <h3 className="text-base font-semibold text-[#111827] mb-1 flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-[#D97706]" /> Premium
+                </h3>
+                <div className="text-2xl font-bold text-[#2563EB]">
+                  $9.99<span className="text-sm text-[#9CA3AF] font-normal">/month</span>
+                </div>
+                <p className="text-xs text-[#6B7280] mt-0.5">Everything you need to excel</p>
+              </div>
+
+              <ul className="space-y-2 mb-6">
+                {premiumFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-[#6B7280]">
+                    <Check className="w-4 h-4 text-[#16A34A] shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={handleUpgrade}
+                disabled={isPremium || upgradeLoading}
+                className={`w-full py-2 rounded-md text-sm font-medium ${isPremium
+                  ? 'bg-[#F0FDF4] text-[#16A34A] border border-[#16A34A]/20 cursor-not-allowed'
+                  : 'btn-primary'
+                  }`}
+              >
+                {isPremium ? (
+                  <><Check className="w-4 h-4 inline mr-1" /> Current Plan</>
+                ) : upgradeLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                    Redirecting to Stripe...
+                  </span>
+                ) : (
+                  'Upgrade to Premium'
+                )}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* FAQ Section */}
-        <div className="mt-16">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
-            Frequently Asked Questions
-          </h2>
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Can I cancel my subscription anytime?
-              </h3>
-              <p className="text-gray-600">
-                Yes, you can cancel your subscription at any time. You'll continue to have access to premium features until the end of your billing period.
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                What payment methods do you accept?
-              </h3>
-              <p className="text-gray-600">
-                We accept all major credit cards and debit cards through our secure payment processor, Stripe.
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Is there a free trial?
-              </h3>
-              <p className="text-gray-600">
-                You can start with our free plan immediately. No credit card required. Upgrade to premium when you're ready for more features.
-              </p>
+          {/* FAQ */}
+          <div className="mt-10">
+            <h2 className="text-base font-semibold text-[#111827] text-center mb-4">FAQ</h2>
+            <div className="space-y-3">
+              {[
+                { q: 'Can I cancel anytime?', a: 'Yes. You\'ll keep premium access until the end of your billing period.' },
+                { q: 'What payment methods?', a: 'All major credit and debit cards via Stripe.' },
+                { q: 'Is there a free trial?', a: 'Start with our free plan immediately. No credit card required.' }
+              ].map((faq, i) => (
+                <div key={i} className="card">
+                  <h3 className="text-sm font-medium text-[#111827] mb-1">{faq.q}</h3>
+                  <p className="text-xs text-[#6B7280]">{faq.a}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Subscription Upgrade Modal */}
-      {showUpgrade && (
-        <SubscriptionUpgrade
-          onClose={() => setShowUpgrade(false)}
-          onSuccess={() => {
-            setShowUpgrade(false);
-            navigate('/dashboard');
-          }}
-        />
-      )}
-    </div>
+    </>
   );
 };
 

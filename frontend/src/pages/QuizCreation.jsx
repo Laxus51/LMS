@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { quizApi } from '../services/quizApi';
 import QuizGenerationLoader from '../components/QuizGenerationLoader';
 import useDynamicLoader from '../hooks/useDynamicLoader';
@@ -17,7 +17,7 @@ const QuizCreation = () => {
   const [error, setError] = useState('');
   const [accessStatus, setAccessStatus] = useState(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
-  
+
   // Dynamic loader for quiz generation
   const {
     isLoading: isGenerating,
@@ -76,15 +76,15 @@ const QuizCreation = () => {
     try {
       startLoading();
       setError('');
-      
+
       const response = await quizApi.generateQuiz(selectedCertification, topic.trim(), difficulty);
-      
+
       // Complete the loading animation
       completeLoading();
-      
+
       // Refresh access status after successful generation
       await checkQuizAccess();
-      
+
       // Small delay to show completion
       setTimeout(() => {
         navigate(`/quiz/attempt/${response.quiz.id}`);
@@ -105,7 +105,7 @@ const QuizCreation = () => {
   if (isLoading || isCheckingAccess) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Create Quiz" />
+        <TopBar title="Create Quiz" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -136,7 +136,7 @@ const QuizCreation = () => {
   if (accessStatus?.role === 'mentor') {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Create Quiz" />
+        <TopBar title="Create Quiz" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <div className="mb-4">
@@ -160,32 +160,29 @@ const QuizCreation = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Create Quiz" />
+      <TopBar title="Create Quiz" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quota Display */}
         {accessStatus && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            accessStatus.role === 'free' 
-              ? accessStatus.has_access 
-                ? 'bg-blue-50 border border-blue-200' 
-                : 'bg-red-50 border border-red-200'
-              : 'bg-green-50 border border-green-200'
-          }`}>
+          <div className={`mb-6 p-4 rounded-lg ${accessStatus.role === 'free'
+            ? accessStatus.has_access
+              ? 'bg-blue-50 border border-blue-200'
+              : 'bg-red-50 border border-red-200'
+            : 'bg-green-50 border border-green-200'
+            }`}>
             <div className="flex justify-between items-center">
               <div>
-                <h3 className={`font-medium ${
-                  accessStatus.role === 'free'
-                    ? accessStatus.has_access ? 'text-blue-900' : 'text-red-900'
-                    : 'text-green-900'
-                }`}>
-                  {accessStatus.role === 'free' ? 'Free Plan' : 
-                   accessStatus.role === 'premium' ? 'Premium Plan' : 'Admin Access'}
+                <h3 className={`font-medium ${accessStatus.role === 'free'
+                  ? accessStatus.has_access ? 'text-blue-900' : 'text-red-900'
+                  : 'text-green-900'
+                  }`}>
+                  {accessStatus.role === 'free' ? 'Free Plan' :
+                    accessStatus.role === 'premium' ? 'Premium Plan' : 'Admin Access'}
                 </h3>
-                <p className={`text-sm ${
-                  accessStatus.role === 'free'
-                    ? accessStatus.has_access ? 'text-blue-700' : 'text-red-700'
-                    : 'text-green-700'
-                }`}>
+                <p className={`text-sm ${accessStatus.role === 'free'
+                  ? accessStatus.has_access ? 'text-blue-700' : 'text-red-700'
+                  : 'text-green-700'
+                  }`}>
                   {accessStatus.message}
                 </p>
               </div>
@@ -200,7 +197,7 @@ const QuizCreation = () => {
             </div>
           </div>
         )}
-        
+
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Generate New Quiz</h2>
@@ -211,7 +208,7 @@ const QuizCreation = () => {
               View History
             </button>
           </div>
-          
+
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
               {error}
@@ -289,7 +286,7 @@ const QuizCreation = () => {
                 'Generate Quiz'
               )}
             </button>
-            
+
             <button
               onClick={handleReset}
               disabled={isGenerating}

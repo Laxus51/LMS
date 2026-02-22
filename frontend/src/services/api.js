@@ -30,10 +30,13 @@ api.interceptors.response.use(
   (error) => {
     // Handle 401 unauthorized errors
     if (error.response?.status === 401) {
-      // Remove token from localStorage
+      // Remove token and user data from localStorage
       localStorage.removeItem('token');
-      // Redirect to login page
-      window.location.href = '/login';
+      localStorage.removeItem('userData');
+      // Only redirect if not already on login page to prevent infinite loops
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

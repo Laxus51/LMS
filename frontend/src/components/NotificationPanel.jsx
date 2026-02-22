@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 
 const NotificationPanel = ({ isOpen, onClose, onNotificationUpdate }) => {
   const { user } = useAuth();
@@ -44,17 +45,10 @@ const NotificationPanel = ({ isOpen, onClose, onNotificationUpdate }) => {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/notifications/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/notifications/');
 
-      const data = await response.json();
-
-      if (response.ok) {
-        const sortedNotifications = (data.data || []).sort((a, b) => 
+      if (response.data.success) {
+        const sortedNotifications = (response.data.data || []).sort((a, b) => 
           new Date(b.created_at) - new Date(a.created_at)
         );
         setNotifications(sortedNotifications);
@@ -63,21 +57,26 @@ const NotificationPanel = ({ isOpen, onClose, onNotificationUpdate }) => {
           onNotificationUpdate();
         }
       } else {
-        if (response.status === 401) {
-          setError('Your session has expired. Please sign in again.');
-        } else if (response.status === 403) {
-          setError('You don\'t have permission to access notifications.');
-        } else if (response.status >= 500) {
-          setError('Server error. Please try again later.');
-        } else {
-          setError(data.message || 'Unable to load notifications.');
-        }
+        setError(response.data.message || 'Unable to load notifications.');
       }
     } catch (err) {
-      if (!navigator.onLine) {
+      console.error('Error fetching notifications:', err);
+      
+      // Provide specific error messages based on status code
+      if (err.response?.status === 401) {
+        setError('Your session has expired. Please sign in again.');
+      } else if (err.response?.status === 403) {
+        setError('You don\'t have permission to access notifications.');
+      } else if (err.response?.status >= 500) {
+        setError('Server error. Please try again later.');
+      } else if (!navigator.onLine) {
         setError('No internet connection. Please check your network.');
       } else {
-        setError('Unable to connect to server. Please try again later.');
+        setError(
+          err.response?.data?.message || 
+          err.message || 
+          'Unable to connect to server. Please try again later.'
+        );
       }
     } finally {
       setLoading(false);
@@ -93,19 +92,11 @@ const NotificationPanel = ({ isOpen, onClose, onNotificationUpdate }) => {
     setCreateSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/notifications/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ message: newNotification.trim() })
+      const response = await api.post('/notifications/', {
+        message: newNotification.trim()
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.data.success) {
         setCreateSuccess('Notification created successfully!');
         setNewNotification('');
         fetchNotifications(); // Refresh the list
@@ -115,10 +106,15 @@ const NotificationPanel = ({ isOpen, onClose, onNotificationUpdate }) => {
         }
         setTimeout(() => setCreateSuccess(''), 3000);
       } else {
-        setCreateError(data.message || 'Failed to create notification');
+        setCreateError(response.data.message || 'Failed to create notification');
       }
     } catch (err) {
-      setCreateError('Network error. Please try again.');
+      console.error('Error creating notification:', err);
+      setCreateError(
+        err.response?.data?.message || 
+        err.message || 
+        'Network error. Please try again.'
+      );
     } finally {
       setCreating(false);
     }
@@ -126,13 +122,7 @@ const NotificationPanel = ({ isOpen, onClose, onNotificationUpdate }) => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`http://localhost:8000/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      await api.patch(`/notifications/${notificationId}/read`);
       
       // Update local state
       setNotifications(prev => 

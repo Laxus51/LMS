@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getLoginRedirectPath } from '../utils/roleRedirect';
 
 const GoogleCallback = () => {
   const [searchParams] = useSearchParams();
@@ -78,8 +79,9 @@ const GoogleCallback = () => {
         // Clear the stored route after use
         sessionStorage.removeItem('oauth_intended_route');
         
-        // Redirect immediately without showing success page
-        navigate(from, { replace: true });
+        // Redirect to appropriate dashboard based on user role and intended path
+        const redirectPath = getLoginRedirectPath(from, userRole);
+        navigate(redirectPath, { replace: true });
         
       } catch (err) {
         console.error('Callback processing error:', err);

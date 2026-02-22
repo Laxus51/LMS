@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { mockExamApi } from '../services/mockExamApi';
 
 const MockExamAttempt = () => {
@@ -37,13 +37,13 @@ const MockExamAttempt = () => {
     try {
       setIsLoading(true);
       const examData = await mockExamApi.getMockExam(examId);
-      
+
       // Check if exam is already completed
       if (examData.completed_at) {
         navigate(`/mock-exam/review/${examId}`);
         return;
       }
-      
+
       setExam(examData);
     } catch (err) {
       setError('Failed to load mock exam: ' + err.message);
@@ -78,13 +78,13 @@ const MockExamAttempt = () => {
     try {
       setIsSubmitting(true);
       setError('');
-      
+
       if (!examId) {
         throw new Error('Invalid exam: missing exam ID');
       }
-      
+
       const result = await mockExamApi.submitMockExam(examId, answers);
-      
+
       // Navigate to results page
       navigate(`/mock-exam/result/${examId}`, { state: { result } });
     } catch (err) {
@@ -106,7 +106,7 @@ const MockExamAttempt = () => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -116,7 +116,7 @@ const MockExamAttempt = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Taking Mock Exam" />
+        <TopBar title="Taking Mock Exam" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -129,7 +129,7 @@ const MockExamAttempt = () => {
   if (error && !exam) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Mock Exam Error" />
+        <TopBar title="Mock Exam Error" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -149,7 +149,7 @@ const MockExamAttempt = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Taking Mock Exam" />
+      <TopBar title="Taking Mock Exam" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           {/* Exam Header */}
@@ -170,7 +170,7 @@ const MockExamAttempt = () => {
                 Time: {formatTime(timeElapsed)}
               </div>
               <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(getAnsweredCount() / getTotalQuestions()) * 100}%` }}
                 ></div>
@@ -197,20 +197,19 @@ const MockExamAttempt = () => {
                     {question.question}
                   </p>
                 </div>
-                
+
                 <div className="space-y-3">
                   {question.options.map((option, optionIndex) => {
                     const optionLetter = String.fromCharCode(65 + optionIndex); // A, B, C, D
                     const isSelected = userAnswers[question.question_id] === optionLetter;
-                    
+
                     return (
                       <label
                         key={optionIndex}
-                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
+                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-colors ${isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
                       >
                         <input
                           type="radio"
@@ -243,7 +242,7 @@ const MockExamAttempt = () => {
                 <p>Questions answered: {getAnsweredCount()} of {getTotalQuestions()}</p>
                 <p>Time elapsed: {formatTime(timeElapsed)}</p>
               </div>
-              
+
               <button
                 onClick={handleSubmitExam}
                 disabled={isSubmitting || getAnsweredCount() < getTotalQuestions()}
@@ -259,7 +258,7 @@ const MockExamAttempt = () => {
                 )}
               </button>
             </div>
-            
+
             {getAnsweredCount() < getTotalQuestions() && (
               <p className="text-sm text-yellow-600 mt-2">
                 Please answer all questions before submitting.

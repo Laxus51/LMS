@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { mockExamApi } from '../services/mockExamApi';
 import MockExamGenerationLoader from '../components/MockExamGenerationLoader';
 import useDynamicLoader from '../hooks/useDynamicLoader';
@@ -15,7 +15,7 @@ const MockExamCreation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [accessStatus, setAccessStatus] = useState(null);
-  
+
   // Dynamic loader for mock exam generation
   const {
     isLoading: isGenerating,
@@ -74,15 +74,15 @@ const MockExamCreation = () => {
     try {
       startLoading();
       setError('');
-      
+
       const response = await mockExamApi.generateMockExam(selectedCertification, difficulty);
-      
+
       // Complete the loading animation
       completeLoading();
-      
+
       // Refresh access status after successful generation
       await checkMockExamAccess();
-      
+
       // Small delay to show completion
       setTimeout(() => {
         if (response?.mock_exam?.id) {
@@ -105,7 +105,7 @@ const MockExamCreation = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Create Mock Exam" />
+        <TopBar title="Create Mock Exam" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -134,14 +134,14 @@ const MockExamCreation = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Create Mock Exam" />
+      <TopBar title="Create Mock Exam" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Create Mock Exam</h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Generate a comprehensive 20-question mock exam to test your knowledge and prepare for certification. 
+              Generate a comprehensive 20-question mock exam to test your knowledge and prepare for certification.
               Mock exams provide a realistic exam experience with pass/fail scoring (70% threshold).
             </p>
           </div>
@@ -208,7 +208,7 @@ const MockExamCreation = () => {
                   'Generate Mock Exam'
                 )}
               </button>
-              
+
               <button
                 onClick={handleReset}
                 disabled={isGenerating}
@@ -231,7 +231,7 @@ const MockExamCreation = () => {
               <h4 className="font-medium text-gray-900">View History</h4>
               <p className="text-sm text-gray-600 mt-1">Review your past mock exams</p>
             </button>
-            
+
             <button
               onClick={() => navigate('/quiz/create')}
               className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
@@ -239,7 +239,7 @@ const MockExamCreation = () => {
               <h4 className="font-medium text-gray-900">Practice Quiz</h4>
               <p className="text-sm text-gray-600 mt-1">Take a 5-question practice quiz</p>
             </button>
-            
+
             <button
               onClick={() => navigate('/dashboard')}
               className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"

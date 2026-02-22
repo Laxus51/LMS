@@ -1,15 +1,15 @@
 import React from 'react';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import StudyPlanGenerator from '../components/StudyPlanGenerator';
 
 const StudyPlanPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="Study Plan" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <TopBar title="Study Plan" />
+      <div className="app-content">
         <StudyPlanGenerator />
       </div>
-    </div>
+    </>
   );
 };
 

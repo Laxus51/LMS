@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Calendar, Clock, DollarSign, User, ArrowRight, Copy, X } from 'lucide-react';
 import mentorSessionApi from '../services/mentorSessionApi';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 
 const MentorSessionPaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  
+
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,10 +26,10 @@ const MentorSessionPaymentSuccess = () => {
   const verifyPaymentAndFetchSession = async () => {
     try {
       setVerifying(true);
-      
+
       // First verify the payment
       const verificationResult = await mentorSessionApi.verifySessionPayment(sessionId);
-      
+
       if (verificationResult.success) {
         // Then fetch the updated session details
         const sessionData = await mentorSessionApi.getSessionById(sessionId);
@@ -65,7 +65,7 @@ const MentorSessionPaymentSuccess = () => {
   if (loading || verifying) {
     return (
       <>
-        <Header title="Payment Processing" />
+        <TopBar title="Payment Processing" />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
@@ -81,7 +81,7 @@ const MentorSessionPaymentSuccess = () => {
   if (error) {
     return (
       <>
-        <Header title="Booking Error" />
+        <TopBar title="Booking Error" />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -103,7 +103,7 @@ const MentorSessionPaymentSuccess = () => {
 
   return (
     <>
-      <Header title="Payment Successful" />
+      <TopBar title="Payment Successful" />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Success Header */}
@@ -121,7 +121,7 @@ const MentorSessionPaymentSuccess = () => {
           {session && (
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Session Details</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start">
                   <User className="w-5 h-5 text-gray-400 mt-0.5 mr-3" />

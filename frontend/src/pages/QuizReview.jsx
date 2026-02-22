@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { quizApi } from '../services/quizApi';
 
 const QuizReview = () => {
@@ -22,13 +22,13 @@ const QuizReview = () => {
     try {
       setIsLoading(true);
       const quizData = await quizApi.getQuiz(quizId);
-      
+
       // Check if quiz is not completed
       if (!quizData.completed_at) {
         navigate(`/quiz/attempt/${quizId}`);
         return;
       }
-      
+
       setQuiz(quizData);
     } catch (err) {
       setError('Failed to load quiz: ' + err.message);
@@ -41,7 +41,7 @@ const QuizReview = () => {
     const userAnswer = quiz.user_answers?.find(answer => answer.question_id === question.question_id);
     const isUserSelected = userAnswer?.selected_option === option.option_id;
     const isCorrect = question.correct_answer === option.option_id;
-    
+
     if (isCorrect) {
       return 'border-green-500 bg-green-50 text-green-800';
     } else if (isUserSelected && !isCorrect) {
@@ -54,7 +54,7 @@ const QuizReview = () => {
     const userAnswer = quiz.user_answers?.find(answer => answer.question_id === question.question_id);
     const isUserSelected = userAnswer?.selected_option === option.option_id;
     const isCorrect = question.correct_answer === option.option_id;
-    
+
     if (isCorrect) {
       return (
         <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -91,7 +91,7 @@ const QuizReview = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Quiz Review" />
+        <TopBar title="Quiz Review" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -104,7 +104,7 @@ const QuizReview = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Quiz Review" />
+        <TopBar title="Quiz Review" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -126,7 +126,7 @@ const QuizReview = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Quiz Review" />
+      <TopBar title="Quiz Review" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quiz Results Summary */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -137,7 +137,7 @@ const QuizReview = () => {
             <p className="text-gray-600 mb-4">
               Topic: {quiz?.topic} | Difficulty: {quiz?.difficulty}
             </p>
-            
+
             <div className="flex justify-center items-center space-x-8 mb-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">
@@ -145,7 +145,7 @@ const QuizReview = () => {
                 </div>
                 <div className="text-sm text-gray-500">Score</div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">
                   {getCorrectAnswersCount()}/{getTotalQuestions()}
@@ -153,11 +153,11 @@ const QuizReview = () => {
                 <div className="text-sm text-gray-500">Correct</div>
               </div>
             </div>
-            
+
             <p className={`text-lg font-medium ${performance.color}`}>
               {performance.message}
             </p>
-            
+
             {quiz?.completed_at && (
               <p className="text-sm text-gray-500 mt-2">
                 Completed on {new Date(quiz.completed_at).toLocaleDateString()}
@@ -169,31 +169,30 @@ const QuizReview = () => {
         {/* Detailed Review */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-6">Detailed Review</h3>
-          
+
           <div className="space-y-8">
             {quiz?.quiz_content?.questions?.map((question, index) => {
               const userAnswer = quiz.user_answers?.find(answer => answer.question_id === question.question_id);
               const isCorrect = userAnswer?.is_correct;
-              
+
               return (
                 <div key={question.question_id} className="border-b border-gray-200 pb-6 last:border-b-0">
                   <div className="flex items-start justify-between mb-4">
                     <h4 className="text-lg font-medium text-gray-900 flex-1">
                       {index + 1}. {question.question}
                     </h4>
-                    <div className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
-                      isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <div className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {isCorrect ? 'Correct' : 'Incorrect'}
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     {question.options.map((option) => {
                       const userAnswer = quiz.user_answers?.find(answer => answer.question_id === question.question_id);
                       const isUserSelected = userAnswer?.selected_option === option.option_id;
                       const isCorrect = question.correct_answer === option.option_id;
-                      
+
                       return (
                         <div
                           key={option.option_id}
@@ -203,7 +202,7 @@ const QuizReview = () => {
                             <span className="font-medium mr-2">{option.option_id}.</span>
                             <span>{option.text}</span>
                           </div>
-                          
+
                           <div className="flex items-center space-x-2">
                             {isUserSelected && (
                               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -221,7 +220,7 @@ const QuizReview = () => {
                       );
                     })}
                   </div>
-                  
+
                   {question.explanation && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <h5 className="font-medium text-blue-900 mb-1">Explanation:</h5>
@@ -242,7 +241,7 @@ const QuizReview = () => {
           >
             ← Back to History
           </button>
-          
+
           <button
             onClick={() => navigate('/quiz/create')}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"

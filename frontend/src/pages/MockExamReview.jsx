@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
+import TopBar from '../components/TopBar';
 import { mockExamApi } from '../services/mockExamApi';
 
 const MockExamReview = () => {
@@ -23,13 +23,13 @@ const MockExamReview = () => {
     try {
       setIsLoading(true);
       const examData = await mockExamApi.getMockExamReview(examId);
-      
+
       // Check if exam is not completed
       if (!examData.completed_at) {
         navigate(`/mock-exam/attempt/${examId}`);
         return;
       }
-      
+
       setExam(examData);
     } catch (err) {
       setError('Failed to load mock exam review: ' + err.message);
@@ -81,7 +81,7 @@ const MockExamReview = () => {
   const getOptionClass = (question, optionLetter, userAnswer) => {
     const isCorrect = optionLetter === question.correct_answer;
     const isUserSelected = userAnswer?.selected_option === optionLetter;
-    
+
     if (isCorrect && isUserSelected) {
       return 'border-green-500 bg-green-50 text-green-800';
     } else if (isCorrect) {
@@ -95,7 +95,7 @@ const MockExamReview = () => {
   const getOptionIcon = (question, optionLetter, userAnswer) => {
     const isCorrect = optionLetter === question.correct_answer;
     const isUserSelected = userAnswer?.selected_option === optionLetter;
-    
+
     if (isCorrect) {
       return <span className="text-green-600 font-bold">✓</span>;
     } else if (isUserSelected) {
@@ -107,7 +107,7 @@ const MockExamReview = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Mock Exam Review" />
+        <TopBar title="Mock Exam Review" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -120,7 +120,7 @@ const MockExamReview = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Mock Exam Review" />
+        <TopBar title="Mock Exam Review" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -143,7 +143,7 @@ const MockExamReview = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Mock Exam Review" />
+      <TopBar title="Mock Exam Review" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Summary */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -157,22 +157,20 @@ const MockExamReview = () => {
               </p>
             </div>
             <div className="text-right">
-              <div className={`text-2xl font-bold ${
-                status === 'pass' ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <div className={`text-2xl font-bold ${status === 'pass' ? 'text-green-600' : 'text-red-600'
+                }`}>
                 {score}%
               </div>
               <div className="text-sm text-gray-500">
                 {getCorrectAnswersCount()}/{getTotalQuestions()} Correct
               </div>
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                status === 'pass' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status === 'pass' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
                 {status === 'pass' ? '✅ PASSED' : '❌ FAILED'}
               </span>
             </div>
           </div>
-          
+
           {/* Control Buttons */}
           <div className="flex space-x-4">
             <button
@@ -196,14 +194,13 @@ const MockExamReview = () => {
             const userAnswer = getUserAnswer(question.question_id);
             const isExpanded = expandedQuestions.has(question.question_id);
             const isCorrect = userAnswer?.is_correct;
-            
+
             return (
               <div key={question.question_id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 {/* Question Header */}
-                <div 
-                  className={`p-4 cursor-pointer border-l-4 ${
-                    isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
-                  }`}
+                <div
+                  className={`p-4 cursor-pointer border-l-4 ${isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
+                    }`}
                   onClick={() => toggleQuestionExpansion(question.question_id)}
                 >
                   <div className="flex justify-between items-start">
@@ -212,9 +209,8 @@ const MockExamReview = () => {
                         <span className="text-sm font-medium text-gray-500 mr-2">
                           Question {index + 1}
                         </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {isCorrect ? '✓ Correct' : '✗ Incorrect'}
                         </span>
                       </div>
@@ -228,12 +224,11 @@ const MockExamReview = () => {
                       </div>
                     </div>
                     <div className="ml-4">
-                      <svg 
-                        className={`w-5 h-5 text-gray-400 transform transition-transform ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`} 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''
+                          }`}
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -252,7 +247,7 @@ const MockExamReview = () => {
                         const optionLetter = String.fromCharCode(65 + optionIndex);
                         const optionClass = getOptionClass(question, optionLetter, userAnswer);
                         const optionIcon = getOptionIcon(question, optionLetter, userAnswer);
-                        
+
                         return (
                           <div
                             key={optionIndex}
@@ -296,21 +291,21 @@ const MockExamReview = () => {
           >
             View Results
           </button>
-          
+
           <button
             onClick={() => navigate('/mock-exam/create')}
             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             Take New Mock Exam
           </button>
-          
+
           <button
             onClick={() => navigate('/mock-exam/history')}
             className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
           >
             View History
           </button>
-          
+
           {status === 'fail' && (
             <button
               onClick={() => navigate('/quiz/create')}

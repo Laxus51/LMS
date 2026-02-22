@@ -4,13 +4,13 @@ import useDynamicLoader from '../hooks/useDynamicLoader';
 const StudyPlanLoadingExperience = ({ certification, duration, dailyHours, onCancel, isComplete = false }) => {
   const [currentTip, setCurrentTip] = useState(0);
   
-  // Use dynamic loader hook
+  // Use dynamic loader hook with duration awareness
   const {
     progress,
     currentStep: dynamicStep,
     startLoading,
     completeLoading
-  } = useDynamicLoader('study_plan_generation');
+  } = useDynamicLoader('study_plan_generation', duration);
 
   // Dynamic steps based on plan duration
   const getStepsForDuration = (planDuration) => {
