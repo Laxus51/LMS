@@ -207,6 +207,46 @@ const LandingPage = () => {
 
         @media (max-width: 768px) {
           .hero-glow { width: 300px; height: 300px; }
+          .landing-nav-buttons { gap: 6px !important; }
+          .landing-nav-buttons .nav-signin {
+            font-size: 12px !important;
+            padding: 6px 8px !important;
+          }
+          .landing-nav-buttons .nav-cta {
+            font-size: 11px !important;
+            padding: 6px 12px !important;
+          }
+          .landing-brand-text {
+            font-size: 13px !important;
+          }
+          .landing-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 8px !important;
+          }
+          .stat-card {
+            padding: 12px 8px !important;
+          }
+          .stat-card .stat-value {
+            font-size: 16px !important;
+          }
+          .stat-card .stat-label {
+            font-size: 9px !important;
+          }
+          .hero-buttons {
+            flex-direction: column !important;
+            align-items: center !important;
+          }
+          .hero-buttons .cta-btn-primary,
+          .hero-buttons .cta-btn-secondary {
+            width: 100%;
+            max-width: 280px;
+            justify-content: center;
+          }
+        }
+        @media (max-width: 380px) {
+          .landing-nav-buttons .nav-signin {
+            display: none !important;
+          }
         }
       `}</style>
 
@@ -227,22 +267,22 @@ const LandingPage = () => {
               }}>
                 <BookOpen style={{ width: 18, height: 18, color: '#fff' }} />
               </div>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Microsoft Trainings</span>
+              <span className="landing-brand-text" style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Microsoft Trainings</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="landing-nav-buttons" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {user ? (
-                <button onClick={() => navigate('/dashboard')} className="cta-btn-primary" style={{ padding: '8px 20px', fontSize: 13 }}>
-                  Go to Dashboard
+                <button onClick={() => navigate('/dashboard')} className="cta-btn-primary nav-cta" style={{ padding: '8px 20px', fontSize: 13 }}>
+                  Dashboard
                 </button>
               ) : (
                 <>
-                  <button onClick={() => navigate('/login')} style={{
+                  <button onClick={() => navigate('/login')} className="nav-signin" style={{
                     background: 'none', border: 'none', color: '#6B7280', fontWeight: 500,
                     fontSize: 14, cursor: 'pointer', padding: '8px 12px'
                   }}>
                     Sign In
                   </button>
-                  <button onClick={() => navigate('/register')} className="cta-btn-primary" style={{ padding: '8px 20px', fontSize: 13 }}>
+                  <button onClick={() => navigate('/register')} className="cta-btn-primary nav-cta" style={{ padding: '8px 20px', fontSize: 13 }}>
                     Get Started
                   </button>
                 </>
@@ -288,7 +328,7 @@ const LandingPage = () => {
               for <span style={{ color: '#fff', fontWeight: 600 }}>SC-900, AZ-900, AZ-104</span> and more.
             </p>
 
-            <div className="scroll-animate delay-3" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 48 }}>
+            <div className="scroll-animate delay-3 hero-buttons" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 48 }}>
               <button onClick={handleGetStarted} className="cta-btn-primary">
                 Get Started Free <ArrowRight style={{ width: 16, height: 16 }} />
               </button>
@@ -298,7 +338,7 @@ const LandingPage = () => {
             </div>
 
             {/* Stats */}
-            <div className="scroll-animate delay-4" style={{
+            <div className="scroll-animate delay-4 landing-stats-grid" style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, maxWidth: 520, margin: '0 auto'
             }}>
               {[
@@ -307,8 +347,8 @@ const LandingPage = () => {
                 { value: '4.9/5', label: 'Average Rating' }
               ].map((s, i) => (
                 <div key={i} className="stat-card">
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 2 }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{s.label}</div>
+                  <div className="stat-value" style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 2 }}>{s.value}</div>
+                  <div className="stat-label" style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{s.label}</div>
                 </div>
               ))}
             </div>
