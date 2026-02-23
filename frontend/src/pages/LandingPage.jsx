@@ -450,7 +450,7 @@ const LandingPage = () => {
               </div>
               <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 20 }}>Perfect for getting started</p>
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px' }}>
-                {['5 quizzes per day', 'Free courses', 'Basic study plans', 'Community support'].map((f, i) => (
+                {['5 quizzes per day', 'Limited Acess to AI Tutor', 'Basic study plans', 'Community support'].map((f, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6B7280', marginBottom: 8 }}>
                     <Check style={{ width: 16, height: 16, color: '#16A34A', flexShrink: 0 }} /> {f}
                   </li>
@@ -482,7 +482,7 @@ const LandingPage = () => {
               </div>
               <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 20 }}>Everything you need to excel</p>
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px' }}>
-                {['Unlimited quizzes', 'All courses', 'Advanced study plans', 'Mock exams', '1-on-1 mentors', 'Priority AI tutor', 'Analytics'].map((f, i) => (
+                {['Unlimited quizzes', 'All courses', 'Advanced study plans', 'Mock exams', '1-on-1 mentors', 'Priority AI tutor'].map((f, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6B7280', marginBottom: 8 }}>
                     <Check style={{ width: 16, height: 16, color: '#16A34A', flexShrink: 0 }} /> {f}
                   </li>
@@ -522,15 +522,15 @@ const LandingPage = () => {
       <footer style={{ background: '#0A0F1A', padding: '32px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}>
-            <div style={{
+            {/* <div style={{
               width: 24, height: 24, background: '#0078D4', borderRadius: 5,
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <BookOpen style={{ width: 14, height: 14, color: '#fff' }} />
-            </div>
+            </div> */}
             <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Microsoft Trainings</span>
           </div>
-          <p style={{ fontSize: 12, color: '#6B7280' }}>© 2024 Microsoft Trainings. All rights reserved.</p>
+          <p style={{ fontSize: 12, color: '#6B7280' }}>© All rights reserved.</p>
         </div>
       </footer>
     </div>
