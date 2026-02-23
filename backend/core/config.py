@@ -31,3 +31,6 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Monthly premium subscription p
 
 # Frontend URL (for CORS, OAuth redirects, etc.)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# Backend URL (for OAuth callback URI behind reverse proxy)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")

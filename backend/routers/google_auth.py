@@ -42,15 +42,11 @@ async def google_login(request: Request):
     Redirect users to Google's OAuth2 login page.
     """
     try:
-        # Generate the redirect URI for the callback
-        redirect_uri = request.url_for('google_callback')
-        # Force HTTPS when behind a reverse proxy (e.g., Render)
-        redirect_uri_str = str(redirect_uri)
-        if redirect_uri_str.startswith('http://') and 'localhost' not in redirect_uri_str and '127.0.0.1' not in redirect_uri_str:
-            redirect_uri_str = redirect_uri_str.replace('http://', 'https://', 1)
+        # Construct redirect URI explicitly to avoid HTTP/HTTPS issues behind proxies
+        redirect_uri = f"{config.BACKEND_URL}/auth/google/callback"
         
         # Redirect to Google's authorization URL
-        return await oauth.google.authorize_redirect(request, redirect_uri_str)
+        return await oauth.google.authorize_redirect(request, redirect_uri)
     except Exception as e:
         return error_response(
             message=f"Failed to initiate Google login: {str(e)}",
