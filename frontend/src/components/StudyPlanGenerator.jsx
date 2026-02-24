@@ -33,13 +33,13 @@ const StudyPlanGenerator = () => {
         studyPlanApi.getAllowedDurations(),
         studyPlanApi.getUserStudyPlans()
       ]);
-      
+
       // Convert certifications object to array
       const certsArray = Object.values(certificationsResponse.certifications || {});
       setCertifications(certsArray);
       setAllowedDurations(durationsResponse.durations || []);
       setUserStudyPlans(plansResponse.study_plans || []);
-      
+
       // Set default duration based on user role
       if ((durationsResponse.durations || []).length > 0) {
         setSelectedDuration(durationsResponse.durations[0]);
@@ -148,7 +148,7 @@ const StudyPlanGenerator = () => {
   // Show engaging loading experience during study plan generation
   if (isGenerating) {
     return (
-      <StudyPlanLoadingExperience 
+      <StudyPlanLoadingExperience
         certification={selectedCertification}
         duration={selectedDuration}
         dailyHours={dailyHours}
@@ -164,7 +164,7 @@ const StudyPlanGenerator = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Microsoft Security Certification Study Plan Generator</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2">Study Plan Generator</h1>
           <p className="text-gray-600">Create a personalized study plan for Microsoft Security certifications</p>
         </div>
 
@@ -179,7 +179,7 @@ const StudyPlanGenerator = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Generate New Study Plan</h2>
-              
+
               <div className="mb-6">
                 <label htmlFor="certification" className="block text-sm font-medium text-gray-700 mb-2">Select Certification</label>
                 <select
@@ -245,7 +245,7 @@ const StudyPlanGenerator = () => {
                   </select>
                 </div>
               )}
-              
+
               {userRole === 'free' && (
                 <div className="mb-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -259,7 +259,7 @@ const StudyPlanGenerator = () => {
                 </div>
               )}
 
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:space-x-4">
                 <button
                   onClick={handlePreview}
                   disabled={isLoading || isGenerating || !selectedCertification}
@@ -289,21 +289,21 @@ const StudyPlanGenerator = () => {
                   {showExistingPlans ? 'Hide' : 'Show'} ({userStudyPlans.length})
                 </button>
               </div>
-              
+
               {showExistingPlans && (
                 <div className="space-y-4">
                   {(userStudyPlans || []).length === 0 ? (
                     <p className="text-gray-500 text-center py-8">No study plans created yet.</p>
                   ) : (
                     (userStudyPlans || []).map((plan) => (
-                      <div key={plan.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex justify-between items-start">
+                      <div key={plan.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                           <div className="flex-1">
                             <h3 className="font-medium text-gray-900 mb-1">{plan.certification_name} ({plan.certification})</h3>
                             <p className="text-sm text-gray-600 mb-1">{plan.duration_days} days • {plan.daily_hours}h/day</p>
                             <small className="text-xs text-gray-500">Created: {new Date(plan.created_at).toLocaleDateString()}</small>
                           </div>
-                          <div className="flex space-x-2 ml-4">
+                          <div className="flex space-x-2">
                             <button
                               onClick={() => handleViewPlan(plan.id)}
                               className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"

@@ -11,7 +11,7 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
   useEffect(() => {
     const loadProgress = async () => {
       if (isPreview || !plan?.id) return;
-      
+
       try {
         setIsLoading(true);
         setProgressError(null);
@@ -31,14 +31,14 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
 
   const toggleDayCompletion = async (dayNumber) => {
     if (isPreview || isLoading) return; // Don't allow completion toggle in preview mode or while loading
-    
+
     try {
       setIsLoading(true);
       setProgressError(null);
-      
+
       // Call API to toggle completion
       await studyPlanProgressApi.toggleDayCompletion(plan.id, dayNumber);
-      
+
       // Update local state
       const newCompletedDays = new Set(completedDays);
       if (completedDays.has(dayNumber)) {
@@ -47,7 +47,7 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
         newCompletedDays.add(dayNumber);
       }
       setCompletedDays(newCompletedDays);
-      
+
     } catch (error) {
       console.error('Failed to update progress:', error);
       setProgressError('Failed to update progress. Please try again.');
@@ -76,43 +76,43 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <button 
-              onClick={onBack} 
-              className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center text-blue-600 hover:text-blue-700 transition-colors text-sm"
             >
               ← Back to Generator
             </button>
-            <div className="text-center flex-1 mx-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{plan.certification_name}</h1>
-              <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">{plan.duration_days} days</span>
-                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">{formatTime(plan.daily_hours)} per day</span>
-                {isPreview && <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">Preview</span>}
+            <div className="text-center flex-1">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">{plan.certification_name}</h1>
+              <div className="flex items-center justify-center flex-wrap gap-2 text-sm text-gray-600">
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs sm:text-sm">{plan.duration_days} days</span>
+                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs sm:text-sm">{formatTime(plan.daily_hours)} per day</span>
+                {isPreview && <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs sm:text-sm">Preview</span>}
               </div>
             </div>
             {isPreview && (
-              <button 
-                onClick={onGenerate} 
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              <button
+                onClick={onGenerate}
+                className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm w-full sm:w-auto"
               >
                 Generate & Save This Plan
               </button>
             )}
           </div>
-          
+
           {!isPreview && (
-            <div className="border-t pt-6">
+            <div className="border-t pt-4 sm:pt-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Progress: {completedDays.size}/{plan.plan_content.daily_plan.length} days</span>
-                <span className="text-sm font-medium text-gray-900">{calculateProgress()}%</span>
+                <span className="text-xs sm:text-sm text-gray-600">Progress: {completedDays.size}/{plan.plan_content.daily_plan.length} days</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">{calculateProgress()}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${calculateProgress()}%` }}
                 ></div>
               </div>
@@ -125,27 +125,27 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
           )}
         </div>
 
-        <div className="flex gap-8">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           {/* Sidebar with day navigation */}
-          <div className="w-80 bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Study Schedule</h3>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+          {/* Day navigation - horizontal scroll on mobile, vertical sidebar on desktop */}
+          <div className="md:w-80 bg-white rounded-lg shadow-md p-4 sm:p-6 shrink-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Study Schedule</h3>
+            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible md:overflow-y-auto md:max-h-96 pb-2 md:pb-0">
               {plan.plan_content.daily_plan.map((day, index) => {
                 const dayNumber = index + 1;
                 const isCompleted = completedDays.has(dayNumber);
                 const isActive = activeDay === dayNumber;
-                
+
                 return (
                   <div
                     key={dayNumber}
-                    className={`p-3 m-1 rounded-lg cursor-pointer transition-all duration-200 ${
-                      isActive ? 'bg-blue-100 border-2 border-blue-500' : isCompleted ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
-                    }`}
+                    className={`p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 shrink-0 md:shrink min-w-[120px] md:min-w-0 ${isActive ? 'bg-blue-100 border-2 border-blue-500' : isCompleted ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                      }`}
                     onClick={() => setActiveDay(dayNumber)}
                   >
                     <div>
-                      <div className="font-medium text-gray-900">Day {dayNumber}</div>
-                      <div className="text-sm text-gray-600 truncate">{day.topic}</div>
+                      <div className="font-medium text-gray-900 text-sm">Day {dayNumber}</div>
+                      <div className="text-xs sm:text-sm text-gray-600 truncate">{day.topic}</div>
                     </div>
                   </div>
                 );
@@ -154,34 +154,33 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
           </div>
 
           {/* Main content area */}
-          <div className="flex-1 bg-white rounded-lg shadow-md p-6">
+          <div className="flex-1 min-w-0 bg-white rounded-lg shadow-md p-4 sm:p-6">
             {plan.plan_content.daily_plan[activeDay - 1] && (
-              <div className="space-y-6">
-                <div className="border-b pb-4">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="border-b pb-3 sm:pb-4">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">
                     Day {activeDay}: {plan.plan_content.daily_plan[activeDay - 1].topic}
                   </h2>
                   <div className="flex items-center text-blue-600">
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs sm:text-sm">
                       📚 {formatTime(plan.plan_content.daily_plan[activeDay - 1].hours)}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Activities</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Activities</h3>
                     {!isPreview && (
                       <button
                         onClick={() => toggleDayCompletion(activeDay)}
                         disabled={isLoading}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${
-                          completedDays.has(activeDay)
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 w-full sm:w-auto ${completedDays.has(activeDay)
                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
+                          }`}
                       >
-                        {isLoading ? 'Updating...' : completedDays.has(activeDay) ? 'Mark as Incomplete' : 'Mark as Completed'}
+                        {isLoading ? 'Updating...' : completedDays.has(activeDay) ? '✓ Completed' : 'Mark Complete'}
                       </button>
                     )}
                   </div>
@@ -190,7 +189,7 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
                       // Handle both old format (string) and new format (object with task and time_minutes)
                       const activityText = typeof activity === 'string' ? activity : activity.task;
                       const timeMinutes = typeof activity === 'object' && activity.time_minutes ? activity.time_minutes : null;
-                      
+
                       return (
                         <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                           <div className="flex items-start justify-between">
@@ -205,11 +204,11 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
                             {timeMinutes && (
                               <div className="flex-shrink-0 ml-4">
                                 <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                  {timeMinutes >= 60 ? 
-                                    (timeMinutes % 60 === 0 ? 
-                                      `${Math.floor(timeMinutes / 60)}h` : 
+                                  {timeMinutes >= 60 ?
+                                    (timeMinutes % 60 === 0 ?
+                                      `${Math.floor(timeMinutes / 60)}h` :
                                       `${Math.floor(timeMinutes / 60)}h ${timeMinutes % 60}min`
-                                    ) : 
+                                    ) :
                                     `${timeMinutes}min`
                                   }
                                 </span>
@@ -267,12 +266,12 @@ const StudyPlanDisplay = ({ plan, isPreview, onBack, onGenerate }) => {
                 <p className="text-orange-700">{plan.plan_content.exam_info.cost || 'Not available'}</p>
               </div>
             </div>
-            
+
             {plan.plan_content.exam_info.registration_url && (
               <div className="text-center">
-                <a 
-                  href={plan.plan_content.exam_info.registration_url} 
-                  target="_blank" 
+                <a
+                  href={plan.plan_content.exam_info.registration_url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
                 >

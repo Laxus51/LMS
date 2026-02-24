@@ -226,3 +226,36 @@ body {
   background-color: var(--bg-app);
   color: var(--text-secondary);
 }
+
+/* ===== Mobile responsive overrides ===== */
+@media (max-width: 768px) {
+  .app-content {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  /* Prevent horizontal overflow on all pages */
+  .app-main {
+    overflow-x: hidden;
+  }
+
+  /* Tighten text sizes */
+  h1,
+  .text-3xl,
+  .text-2xl {
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-content {
+    padding: 8px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+}
