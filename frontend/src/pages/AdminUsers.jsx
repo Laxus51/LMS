@@ -3,226 +3,230 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import TopBar from '../components/TopBar';
 import api from '../services/api';
+import { Trash2, Shield, Users } from 'lucide-react';
+
+const ROLES = ['free', 'premium', 'mentor', 'admin'];
+
+const getRoleBadge = (role) => {
+  const map = {
+    admin: 'bg-red-100 text-red-800',
+    premium: 'bg-purple-100 text-purple-800',
+    mentor: 'bg-blue-100 text-blue-800',
+    free: 'bg-gray-100 text-gray-700',
+  };
+  return map[role] || 'bg-gray-100 text-gray-700';
+};
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // user object to confirm
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // Check if user is admin
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      navigate('/dashboard', { replace: true });
-      return;
-    }
+    if (user && user.role !== 'admin') navigate('/dashboard', { replace: true });
   }, [user, navigate]);
 
   useEffect(() => {
-    if (user && user.role === 'admin') {
-      fetchUsers();
-    }
+    if (user?.role === 'admin') fetchUsers();
   }, [user]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/users/admin/users');
-
-      if (response.data.success) {
-        setUsers(response.data.data);
-      } else {
-        setError(response.data.message || 'Failed to fetch users');
-      }
+      const res = await api.get('/users/admin/users');
+      if (res.data.success) setUsers(res.data.data);
+      else setError(res.data.message || 'Failed to fetch users');
     } catch (err) {
-      console.error('Error fetching users:', err);
-      if (err.response?.status === 403) {
-        setError('Access denied. Admin privileges required.');
-        setTimeout(() => navigate('/dashboard'), 2000);
-      } else if (err.response?.status === 401) {
-        setError('Session expired. Please login again.');
-        setTimeout(() => {
-          logout();
-          navigate('/login');
-        }, 2000);
-      } else if (err.response?.status >= 500) {
-        setError('Our servers are experiencing issues. Please try again in a few minutes.');
-      } else if (!navigator.onLine) {
-        setError('No internet connection. Please check your network and try again.');
-      } else {
-        setError(
-          err.response?.data?.message ||
-          err.message ||
-          'Unable to load users right now. Please try again later.'
-        );
-      }
+      if (err.response?.status === 401) { logout(); navigate('/login'); }
+      else setError(err.response?.data?.message || 'Unable to load users.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRetry = () => {
-    fetchUsers();
-  };
-
-
-
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'user':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleDelete = async (targetUser) => {
+    setDeletingId(targetUser.id);
+    try {
+      await api.delete(`/users/admin/users/${targetUser.id}`);
+      setUsers(prev => prev.filter(u => u.id !== targetUser.id));
+      setConfirmDelete(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete user.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  // Don't render if user is not admin
-  if (user && user.role !== 'admin') {
-    return null;
-  }
+  const handleRoleChange = async (userId, newRole) => {
+    setUpdatingId(userId);
+    try {
+      const res = await api.put(`/users/admin/users/${userId}/role`, { role: newRole });
+      if (res.data.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update role.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading users...</p>
-        </div>
-      </div>
-    );
-  }
+  if (user?.role !== 'admin') return null;
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <strong className="font-bold">Error!</strong>
-            <span className="block sm:inline"> {error}</span>
-          </div>
-          <div className="space-x-4">
-            <button
-              onClick={handleRetry}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-200"
-            >
-              Try Again
-            </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition duration-200"
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+        <p className="mt-4 text-gray-600">Loading users...</p>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center max-w-md mx-auto">
+        <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">{error}</div>
+        <button onClick={fetchUsers} className="btn-primary">Try Again</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopBar title="User Management" showBackButton={true} backTo="/dashboard" />
+      <TopBar title="User Management" showBackButton backTo="/dashboard" />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Stats */}
-          <div className="mb-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Registered Users</dt>
-                      <dd className="text-lg font-medium text-gray-900">{users.length}</dd>
-                    </dl>
-                  </div>
-                </div>
+      <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {['free', 'premium', 'mentor', 'admin'].map(role => (
+            <div key={role} className="bg-white rounded-lg border border-[#E5E7EB] p-4 text-center">
+              <div className="text-2xl font-bold text-[#111827]">
+                {users.filter(u => u.role === role).length}
               </div>
+              <div className="text-xs text-[#6B7280] mt-1 capitalize">{role}</div>
             </div>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="bg-white shadow-sm rounded-lg border border-[#E5E7EB] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#6B7280]" />
+            <h3 className="text-sm font-semibold text-[#111827]">All Users ({users.length})</h3>
           </div>
-
-          {/* Users Table */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">All Users</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Complete list of all registered users in the system.
-              </p>
-            </div>
-
-            {users.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-                <p className="mt-1 text-sm text-gray-500">No users are currently registered in the system.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-indigo-600">
-                                  {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.name || 'No name provided'}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                            {user.role}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">ID</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map(u => (
+                  <tr key={u.id} className="hover:bg-gray-50">
+                    {/* User info */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-semibold text-blue-600">
+                            {(u.name || u.email).charAt(0).toUpperCase()}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          #{user.id}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">{u.name || '—'}</div>
+                          <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Role selector */}
+                    <td className="px-4 py-3">
+                      {u.id === user.id ? (
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadge(u.role)}`}>
+                          {u.role} (you)
+                        </span>
+                      ) : (
+                        <select
+                          value={u.role}
+                          disabled={updatingId === u.id}
+                          onChange={e => handleRoleChange(u.id, e.target.value)}
+                          className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                          {ROLES.map(r => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      )}
+                    </td>
+
+                    {/* ID */}
+                    <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">#{u.id}</td>
+
+                    {/* Delete */}
+                    <td className="px-4 py-3 text-right">
+                      {u.id !== user.id && (
+                        <button
+                          onClick={() => setConfirmDelete(u)}
+                          disabled={deletingId === u.id}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-40"
+                          title="Delete user"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
+      {/* Confirm delete modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Delete User</h3>
+                <p className="text-xs text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-700 mb-5">
+              Are you sure you want to delete <strong>{confirmDelete.name || confirmDelete.email}</strong>? All their data will be permanently removed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDelete)}
+                disabled={deletingId === confirmDelete.id}
+                className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deletingId === confirmDelete.id ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

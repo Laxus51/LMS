@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import TopBar from '../components/TopBar';
 import api from '../services/api';
 import paymentApi from '../services/paymentApi';
-import { User, Mail, Shield, Calendar, AlertTriangle, Crown } from 'lucide-react';
+import { User, Mail, Shield, Calendar, AlertTriangle, Crown, Trash2 } from 'lucide-react';
 
 const UserProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -23,6 +23,12 @@ const UserProfile = () => {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelMessage, setCancelMessage] = useState('');
   const [cancelError, setCancelError] = useState('');
+
+  // Self-delete state
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -87,6 +93,20 @@ const UserProfile = () => {
       setCancelError(err.response?.data?.detail || 'Failed to cancel subscription. Please try again.');
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    try {
+      setDeleteLoading(true);
+      setDeleteError('');
+      await api.delete('/users/me');
+      logout();
+      navigate('/login');
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Failed to delete account. Please try again.');
+      setDeleteLoading(false);
     }
   };
 
@@ -443,6 +463,68 @@ const UserProfile = () => {
                     )}
                   </>
                 ) : null}
+              </div>
+            )}
+          </div>
+          {/* Danger Zone */}
+          <div className="card mb-4 border-[#FCA5A5]">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#FCA5A5]">
+              <Trash2 className="w-4 h-4 text-[#DC2626]" />
+              <h3 className="text-sm font-semibold text-[#DC2626]">Danger Zone</h3>
+            </div>
+
+            {!showDeleteAccount ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-[#111827]">Delete Account</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">Permanently remove your account and all data.</p>
+                </div>
+                <button
+                  onClick={() => setShowDeleteAccount(true)}
+                  className="px-3 py-1.5 text-xs font-medium text-[#DC2626] border border-[#DC2626]/30 rounded-md hover:bg-[#FEF2F2] transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start gap-2 p-3 bg-[#FEF2F2] rounded-md border border-[#FCA5A5]">
+                  <AlertTriangle className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                  <p className="text-xs text-[#7F1D1D]">
+                    This action is <strong>irreversible</strong>. All your data, courses, quizzes, and progress will be permanently deleted.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#374151] mb-1">
+                    Type <strong>DELETE</strong> to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={e => { setDeleteConfirmText(e.target.value); setDeleteError(''); }}
+                    placeholder="DELETE"
+                    className="w-full px-3 py-2 text-sm border border-[#FCA5A5] rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                </div>
+                {deleteError && (
+                  <p className="text-xs text-[#DC2626]">{deleteError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(''); setDeleteError(''); }}
+                    className="btn-secondary text-xs flex-1"
+                    disabled={deleteLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                    className="flex-1 px-3 py-2 text-xs font-medium text-white bg-[#DC2626] rounded-md hover:bg-[#B91C1C] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {deleteLoading ? 'Deleting...' : 'Permanently Delete'}
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from schemas.user import UserCreate, UserLogin, UserProfileUpdate, UserOut
 from services.user_service import (
     create_user, authenticate_user, create_access_token, 
-    get_user_by_id, get_user_by_email, update_user_profile, get_all_users
+    get_user_by_id, get_user_by_email, update_user_profile, get_all_users,
+    delete_user, update_user_role
 )
 from core.database import get_db
 from utils.auth import get_current_user, require_admin
@@ -140,6 +141,61 @@ def list_all_users(
             data=[UserOut.model_validate(u).model_dump(mode="json") for u in users],
             message="All users retrieved successfully"
         )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+@router.delete("/admin/users/{user_id}")
+def admin_delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_admin)
+):
+    """Delete any user by ID (Admin only)."""
+    try:
+        # Prevent admin from deleting themselves
+        if admin_user["id"] == user_id:
+            return error_response(message="Cannot delete your own account via admin panel", status_code=400)
+        delete_user(db, user_id)
+        return success_response(message="User deleted successfully")
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+
+
+@router.put("/admin/users/{user_id}/role")
+def admin_update_user_role(
+    user_id: int,
+    role_data: dict,
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_admin)
+):
+    """Update a user's role (Admin only)."""
+    try:
+        new_role = role_data.get("role")
+        if not new_role:
+            return error_response(message="Role is required", status_code=400)
+        updated = update_user_role(db, user_id, new_role)
+        return success_response(
+            data=UserOut.model_validate(updated).model_dump(mode="json"),
+            message=f"User role updated to {new_role}"
+        )
+    except HTTPException as e:
+        return error_response(message=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return error_response(message=str(e), status_code=500)
+
+
+@router.delete("/me")
+def delete_own_account(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete the currently authenticated user's own account."""
+    try:
+        delete_user(db, user["id"])
+        return success_response(message="Account deleted successfully")
     except HTTPException as e:
         return error_response(message=e.detail, status_code=e.status_code)
     except Exception as e:

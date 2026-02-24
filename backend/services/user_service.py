@@ -104,6 +104,45 @@ def get_all_users(db: Session) -> list[User]:
     """Get all users (admin function)."""
     return db.query(User).order_by(User.id.asc()).all()
 
+def delete_user(db: Session, user_id: int) -> bool:
+    """Delete a user by ID. Returns True on success."""
+    from models.user import UserRole
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Prevent deleting the last admin
+    if user.role == UserRole.ADMIN:
+        admin_count = db.query(User).filter(User.role == UserRole.ADMIN).count()
+        if admin_count <= 1:
+            raise HTTPException(status_code=400, detail="Cannot delete the last admin account")
+    try:
+        db.delete(user)
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
+
+def update_user_role(db: Session, user_id: int, new_role: str) -> User:
+    """Update a user's role (admin function)."""
+    from models.user import UserRole
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        role_map = {r.value: r for r in UserRole}
+        if new_role not in role_map:
+            raise HTTPException(status_code=400, detail=f"Invalid role: {new_role}")
+        user.role = role_map[new_role]
+        db.commit()
+        db.refresh(user)
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update role: {str(e)}")
+
 def create_user_oauth(db: Session, user: UserCreate) -> User:
     """Create a new user for OAuth (without checking if user exists)."""
     try:
