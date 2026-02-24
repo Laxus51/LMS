@@ -46,16 +46,21 @@ async def send_message(
 
 @router.get("/conversations", response_model=List[ChatConversation])
 async def get_conversations(
+    skip: int = 0,
+    limit: int = 20,
     db: Session = Depends(get_db),
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Get all conversations for the current user
+    Get paginated conversations for the current user.
+    Use skip and limit for pagination (e.g. ?skip=0&limit=20).
     """
     try:
         conversations = chat_service.get_user_conversations(
             db=db,
-            user_id=current_user["id"]
+            user_id=current_user["id"],
+            limit=limit,
+            skip=skip
         )
         return conversations
         

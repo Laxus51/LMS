@@ -85,13 +85,13 @@ class ChatService:
         return conversation
     
     @staticmethod
-    def get_user_conversations(db: Session, user_id: int, limit: int = 50) -> List[ChatConversation]:
+    def get_user_conversations(db: Session, user_id: int, limit: int = 20, skip: int = 0) -> List[ChatConversation]:
         """
-        Get all conversations for a user
+        Get paginated conversations for a user.
         """
         return db.query(ChatConversation).filter(
             ChatConversation.user_id == user_id
-        ).order_by(ChatConversation.updated_at.desc()).limit(limit).all()
+        ).order_by(ChatConversation.updated_at.desc()).offset(skip).limit(limit).all()
     
     @staticmethod
     def get_conversation_with_messages(db: Session, conversation_id: int, user_id: int) -> Optional[ChatConversation]:

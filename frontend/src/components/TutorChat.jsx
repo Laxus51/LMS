@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { chatApi } from '../services/chatApi';
 import { Send, MessageSquare, Trash2, Plus, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 const TutorChat = () => {
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
@@ -11,6 +13,9 @@ const TutorChat = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [accessStatus, setAccessStatus] = useState(null);
   const [isLoadingAccess, setIsLoadingAccess] = useState(true);
+  const [convSkip, setConvSkip] = useState(0);
+  const [hasMoreConvs, setHasMoreConvs] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -34,12 +39,31 @@ const TutorChat = () => {
     }
   };
 
-  const loadConversations = async () => {
+  const loadConversations = async (reset = false) => {
+    const skip = reset ? 0 : convSkip;
     try {
-      const data = await chatApi.getConversations();
-      setConversations(data);
+      const data = await chatApi.getConversations(skip, PAGE_SIZE);
+      const list = Array.isArray(data) ? data : [];
+      if (reset) {
+        setConversations(list);
+        setConvSkip(list.length);
+      } else {
+        setConversations(prev => [...prev, ...list]);
+        setConvSkip(prev => prev + list.length);
+      }
+      setHasMoreConvs(list.length === PAGE_SIZE);
     } catch (error) {
       console.error('Failed to load conversations:', error);
+    }
+  };
+
+  const loadMoreConversations = async () => {
+    if (isLoadingMore || !hasMoreConvs) return;
+    setIsLoadingMore(true);
+    try {
+      await loadConversations(false);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -95,7 +119,7 @@ const TutorChat = () => {
 
       if (!currentConversation && response.conversation) {
         setCurrentConversation(response.conversation);
-        await loadConversations();
+        await loadConversations(true); // reset: show the new conversation at top
       }
 
       const aiMessage = { role: 'ASSISTANT', content: response.message.content, timestamp: new Date().toISOString() };
@@ -176,8 +200,8 @@ const TutorChat = () => {
               <div
                 key={conversation.id}
                 className={`px-3 py-2.5 border-b border-[#F3F4F6] cursor-pointer hover:bg-[#F9FAFB] text-left ${currentConversation?.id === conversation.id
-                    ? 'bg-[#EFF6FF] border-l-[3px] border-l-[#2563EB]'
-                    : ''
+                  ? 'bg-[#EFF6FF] border-l-[3px] border-l-[#2563EB]'
+                  : ''
                   }`}
                 onClick={() => loadConversation(conversation.id)}
               >
@@ -195,6 +219,16 @@ const TutorChat = () => {
                 </div>
               </div>
             ))
+          )}
+          {/* Load More */}
+          {hasMoreConvs && (
+            <button
+              onClick={loadMoreConversations}
+              disabled={isLoadingMore}
+              className="w-full py-2 text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+            >
+              {isLoadingMore ? 'Loading...' : 'Load older chats'}
+            </button>
           )}
         </div>
       </div>
@@ -235,8 +269,8 @@ const TutorChat = () => {
               return (
                 <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] lg:max-w-[70%] px-3.5 py-2.5 rounded-lg text-sm ${isUser
-                      ? 'bg-[#2563EB] text-white'
-                      : 'bg-white border border-[#E5E7EB] text-[#111827]'
+                    ? 'bg-[#2563EB] text-white'
+                    : 'bg-white border border-[#E5E7EB] text-[#111827]'
                     }`}>
                     <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
                     <div className={`text-[10px] mt-1 ${isUser ? 'text-blue-200' : 'text-[#9CA3AF]'}`}>

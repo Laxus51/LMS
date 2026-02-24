@@ -16,10 +16,10 @@ export const chatApi = {
     }
   },
 
-  // Get all conversations for the current user
-  getConversations: async () => {
+  // Get paginated conversations for the current user
+  getConversations: async (skip = 0, limit = 20) => {
     try {
-      const response = await api.get('/chat/conversations');
+      const response = await api.get('/chat/conversations', { params: { skip, limit } });
       return response.data;
     } catch (error) {
       console.error('Error fetching conversations:', error);

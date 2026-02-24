@@ -23,7 +23,9 @@ const AdminUsers = () => {
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // user object to confirm
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  // { userId, currentRole, newRole }
+  const [pendingRole, setPendingRole] = useState(null);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -74,7 +76,13 @@ const AdminUsers = () => {
       alert(err.response?.data?.message || 'Failed to update role.');
     } finally {
       setUpdatingId(null);
+      setPendingRole(null);
     }
+  };
+
+  const stageRoleChange = (userId, currentRole, newRole) => {
+    if (newRole === currentRole) return;
+    setPendingRole({ userId, currentRole, newRole });
   };
 
   if (user?.role !== 'admin') return null;
@@ -154,11 +162,37 @@ const AdminUsers = () => {
                         <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadge(u.role)}`}>
                           {u.role} (you)
                         </span>
+                      ) : pendingRole?.userId === u.id ? (
+                        /* Step 2: inline confirm */
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadge(pendingRole.currentRole)}`}>
+                            {pendingRole.currentRole}
+                          </span>
+                          <span className="text-xs text-gray-400">→</span>
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getRoleBadge(pendingRole.newRole)}`}>
+                            {pendingRole.newRole}
+                          </span>
+                          <button
+                            onClick={() => handleRoleChange(pendingRole.userId, pendingRole.newRole)}
+                            disabled={updatingId === u.id}
+                            className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          >
+                            {updatingId === u.id ? '...' : 'Confirm'}
+                          </button>
+                          <button
+                            onClick={() => setPendingRole(null)}
+                            disabled={updatingId === u.id}
+                            className="px-2 py-0.5 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       ) : (
+                        /* Step 1: dropdown */
                         <select
                           value={u.role}
-                          disabled={updatingId === u.id}
-                          onChange={e => handleRoleChange(u.id, e.target.value)}
+                          disabled={updatingId === u.id || !!pendingRole}
+                          onChange={e => stageRoleChange(u.id, u.role, e.target.value)}
                           className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
                         >
                           {ROLES.map(r => (
