@@ -13,7 +13,7 @@ from models.mentor_session import SessionStatus
 from schemas.mentor_session import (
     MentorProfileCreate, MentorProfileUpdate, MentorProfileResponse,
     MentorAvailabilityCreate, MentorAvailabilityUpdate, MentorAvailabilityResponse,
-    MentorSessionResponse, SessionBookingRequest, SessionBookingResponse,
+    MentorSessionResponse, MentorSessionUpdate, SessionBookingRequest, SessionBookingResponse,
     SessionPaymentRequest, SessionPaymentResponse,
     AvailableTimeSlotsRequest, AvailableTimeSlotsResponse, TimeSlot,
     MentorListResponse, MentorListItem,
@@ -235,12 +235,19 @@ async def get_user_sessions(
         sessions = mentor_service.get_student_sessions(db, current_user["id"], status)
     
     
-    # Add mentor/student names to response
+    # Add mentor/student names and review status to response
+    from models.mentor_session import SessionReview
     for session in sessions:
         if hasattr(session, 'mentor') and session.mentor:
             session.mentor_name = session.mentor.name
         if hasattr(session, 'student') and session.student:
             session.student_name = session.student.name
+        # Check if current user already reviewed this session
+        existing_review = db.query(SessionReview).filter(
+            SessionReview.session_id == session.id,
+            SessionReview.reviewer_id == current_user["id"]
+        ).first()
+        session.has_user_review = existing_review is not None
     
     return sessions
 
@@ -267,6 +274,40 @@ async def get_session(
         session.student_name = session.student.name
     
     return session
+
+@router.put("/sessions/{session_id}", response_model=MentorSessionResponse)
+async def update_session(
+    session_id: int,
+    update_data: MentorSessionUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update session details (meeting link, notes). Mentor only."""
+    session = mentor_service.get_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Only the session's mentor can update
+    if session.mentor_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Only the session mentor can update session details")
+    
+    try:
+        update_dict = update_data.model_dump(exclude_unset=True)
+        for key, value in update_dict.items():
+            setattr(session, key, value)
+        db.commit()
+        db.refresh(session)
+        
+        # Add names
+        if hasattr(session, 'mentor') and session.mentor:
+            session.mentor_name = session.mentor.name
+        if hasattr(session, 'student') and session.student:
+            session.student_name = session.student.name
+        
+        return session
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update session")
 
 @router.put("/sessions/{session_id}/status")
 async def update_session_status(

@@ -94,6 +94,7 @@ class MentorSessionResponse(MentorSessionBase):
     # Nested objects
     mentor_name: Optional[str] = None
     student_name: Optional[str] = None
+    has_user_review: bool = False
     
     class Config:
         from_attributes = True

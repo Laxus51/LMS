@@ -442,7 +442,7 @@ class MentorService:
         if not session:
             raise ValueError("Session not found")
         
-        if session.status != 'COMPLETED':
+        if session.status != SessionStatus.COMPLETED:
             raise ValueError("Can only review completed sessions")
         
         # Check if reviewer is student or mentor in the session

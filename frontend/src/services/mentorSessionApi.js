@@ -162,11 +162,22 @@ const mentorSessionApi = {
   updateSessionStatus: async (sessionId, status) => {
     try {
       const response = await api.put(`/mentor-sessions/sessions/${sessionId}/status`, null, {
-        params: { status }
+        params: { status: status.toUpperCase() }
       });
       return response.data;
     } catch (error) {
       console.error('Error updating session status:', error);
+      throw error;
+    }
+  },
+
+  // Update session details (meeting link, notes)
+  updateSession: async (sessionId, updateData) => {
+    try {
+      const response = await api.put(`/mentor-sessions/sessions/${sessionId}`, updateData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating session:', error);
       throw error;
     }
   },

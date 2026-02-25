@@ -29,6 +29,8 @@ const MentorSessionsPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
+  const [reviewedSessionIds, setReviewedSessionIds] = useState(new Set());
+  const [reviewError, setReviewError] = useState('');
   const { user } = useAuth();
 
   useEffect(() => {
@@ -45,6 +47,9 @@ const MentorSessionsPage = () => {
 
       setSessions(sessionsData);
       setStats(statsData);
+      // Seed reviewed IDs from backend data
+      const reviewed = new Set(sessionsData.filter(s => s.has_user_review).map(s => s.id));
+      setReviewedSessionIds(prev => new Set([...prev, ...reviewed]));
     } catch (error) {
       setError('Failed to load session data');
       console.error('Session data error:', error);
@@ -55,18 +60,26 @@ const MentorSessionsPage = () => {
 
   const handleReviewSubmit = async () => {
     try {
+      setReviewError('');
       await mentorSessionApi.createSessionReview(selectedSession.id, reviewData);
+      setReviewedSessionIds(prev => new Set([...prev, selectedSession.id]));
       setShowReviewModal(false);
       setSelectedSession(null);
       setReviewData({ rating: 5, comment: '' });
-      fetchSessionData(); // Refresh data
+      fetchSessionData();
     } catch (error) {
-      setError('Failed to submit review');
+      const msg = error.response?.data?.detail || error.response?.data?.message || '';
+      if (msg.toLowerCase().includes('already exists')) {
+        setReviewedSessionIds(prev => new Set([...prev, selectedSession.id]));
+        setReviewError('You have already reviewed this session.');
+      } else {
+        setReviewError(msg || 'Failed to submit review. Please try again.');
+      }
     }
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'pending':
         return <AlertCircle className="w-4 h-4 text-yellow-500" />;
       case 'confirmed':
@@ -81,7 +94,7 @@ const MentorSessionsPage = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'confirmed':
@@ -108,11 +121,11 @@ const MentorSessionsPage = () => {
 
   const filteredSessions = sessions.filter(session => {
     if (selectedStatus === 'all') return true;
-    return session.status === selectedStatus;
+    return session.status?.toLowerCase() === selectedStatus;
   });
 
   const upcomingSessions = sessions.filter(session =>
-    session.status === 'confirmed' && new Date(session.scheduled_at) > new Date()
+    session.status?.toLowerCase() === 'confirmed' && new Date(session.scheduled_at) > new Date()
   );
 
   if (loading) {
@@ -340,7 +353,7 @@ const MentorSessionsPage = () => {
                           <p className="text-sm text-gray-700 mb-4">{session.description}</p>
                         )}
 
-                        {session.meeting_link && session.status === 'confirmed' && (
+                        {session.meeting_link && session.status?.toLowerCase() === 'confirmed' && (
                           <div className="mb-4">
                             <a
                               href={session.meeting_link}
@@ -354,17 +367,25 @@ const MentorSessionsPage = () => {
                         )}
 
                         <div className="flex items-center space-x-4">
-                          {session.status === 'completed' && (
-                            <button
-                              onClick={() => {
-                                setSelectedSession(session);
-                                setShowReviewModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
-                            >
-                              <Star className="w-4 h-4 mr-1" />
-                              Leave Review
-                            </button>
+                          {session.status?.toLowerCase() === 'completed' && (
+                            reviewedSessionIds.has(session.id) ? (
+                              <span className="text-green-600 text-sm flex items-center">
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Reviewed
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedSession(session);
+                                  setShowReviewModal(true);
+                                  setReviewError('');
+                                }}
+                                className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
+                              >
+                                <Star className="w-4 h-4 mr-1" />
+                                Leave Review
+                              </button>
+                            )
                           )}
 
                           {session.mentor_notes && (
@@ -418,12 +439,19 @@ const MentorSessionsPage = () => {
                 />
               </div>
 
+              {reviewError && (
+                <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{reviewError}</p>
+                </div>
+              )}
+
               <div className="flex space-x-3">
                 <button
                   onClick={() => {
                     setShowReviewModal(false);
                     setSelectedSession(null);
                     setReviewData({ rating: 5, comment: '' });
+                    setReviewError('');
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >

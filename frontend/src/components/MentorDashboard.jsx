@@ -9,7 +9,9 @@ import {
   Settings,
   CheckCircle,
   AlertCircle,
-  XCircle
+  XCircle,
+  Link,
+  ExternalLink
 } from 'lucide-react';
 import mentorSessionApi from '../services/mentorSessionApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +27,9 @@ const MentorDashboard = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [editingLinkId, setEditingLinkId] = useState(null);
+  const [linkValue, setLinkValue] = useState('');
+  const [savingLink, setSavingLink] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -63,11 +68,26 @@ const MentorDashboard = () => {
   const handleProfileCreated = (newProfile) => {
     setProfile(newProfile);
     setShowProfileSetup(false);
-    fetchDashboardData(); // Refresh all data
+    fetchDashboardData();
+  };
+
+  const handleSaveMeetingLink = async (sessionId) => {
+    setSavingLink(true);
+    try {
+      await mentorSessionApi.updateSession(sessionId, { meeting_link: linkValue || null });
+      // Update local state
+      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, meeting_link: linkValue || null } : s));
+      setEditingLinkId(null);
+      setLinkValue('');
+    } catch (err) {
+      setError('Failed to save meeting link');
+    } finally {
+      setSavingLink(false);
+    }
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'pending':
         return <AlertCircle className="w-4 h-4 text-yellow-500" />;
       case 'confirmed':
@@ -82,7 +102,7 @@ const MentorDashboard = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'confirmed':
@@ -318,12 +338,70 @@ const MentorDashboard = () => {
                             <p className="text-sm font-medium text-green-600 mt-2">
                               ${session.price}
                             </p>
+
+                            {/* Meeting Link Management */}
+                            {(session.status === 'confirmed' || session.status === 'CONFIRMED') && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                {editingLinkId === session.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Link className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <input
+                                      type="url"
+                                      value={linkValue}
+                                      onChange={e => setLinkValue(e.target.value)}
+                                      placeholder="https://zoom.us/j/... or https://meet.google.com/..."
+                                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <button
+                                      onClick={() => handleSaveMeetingLink(session.id)}
+                                      disabled={savingLink}
+                                      className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                                    >
+                                      {savingLink ? '...' : 'Save'}
+                                    </button>
+                                    <button
+                                      onClick={() => { setEditingLinkId(null); setLinkValue(''); }}
+                                      className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : session.meeting_link ? (
+                                  <div className="flex items-center gap-2">
+                                    <Link className="w-4 h-4 text-green-600 shrink-0" />
+                                    <a
+                                      href={session.meeting_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-600 hover:text-blue-800 truncate flex items-center gap-1"
+                                    >
+                                      {session.meeting_link.substring(0, 50)}{session.meeting_link.length > 50 ? '...' : ''}
+                                      <ExternalLink className="w-3 h-3 shrink-0" />
+                                    </a>
+                                    <button
+                                      onClick={() => { setEditingLinkId(session.id); setLinkValue(session.meeting_link); }}
+                                      className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 shrink-0"
+                                    >
+                                      Edit
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => { setEditingLinkId(session.id); setLinkValue(''); }}
+                                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800"
+                                  >
+                                    <Link className="w-3.5 h-3.5" />
+                                    Add Meeting Link
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
                               {session.status}
                             </span>
-                            {session.status === 'confirmed' && (
+                            {(session.status === 'confirmed' || session.status === 'CONFIRMED') && (
                               <button
                                 onClick={() => handleStatusUpdate(session.id, 'completed')}
                                 className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
